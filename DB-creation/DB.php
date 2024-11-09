@@ -108,9 +108,8 @@ run_queries(
 
         "CREATE TABLE IF NOT EXISTS $dbname.Receipt (
             ID INT PRIMARY KEY AUTO_INCREMENT,
-            DonationID INT,
-            Status VARCHAR(50),
-            FOREIGN KEY (DonationID) REFERENCES Donation(ID)
+            DonateID INT,
+            FOREIGN KEY (DonateID) REFERENCES Donate(ID)
         )",
 
         "CREATE TABLE IF NOT EXISTS $dbname.Event (
