@@ -9,15 +9,18 @@ class Donor extends Person {
         $this->personId = $personId;
     }
 
+
     // Getters
     public function getId() {
         return $this->id;
     }
 
+
     // Setters
     public function setId($id) {
         $this->id = $id;
     }
+
 
     public function createDonar() {
         $conn = DBConnection::getInstance()->getConnection();
@@ -46,6 +49,7 @@ class Donor extends Person {
         }
         return $result;
     }
+
 
 
     public function login($email, $enteredPassword) {
@@ -92,6 +96,7 @@ class Donor extends Person {
             return false;
         }
     }
+    
     
     
     //public function signup($name, $age, $password, $email, $addressId)
