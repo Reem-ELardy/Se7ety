@@ -1,4 +1,6 @@
 <?php
+require_once __DIR__ . "/../DB-creation/DB-Connection.php";
+
 class Volunteer extends Person {
     protected $id;
     protected $personId;
@@ -107,10 +109,78 @@ class Volunteer extends Person {
         $this->certificates = $certificates;
     }
 
-    public function createVolunteer($dbConnection) {
+    public function login($email, $enteredPassword) {
+        $conn = DBConnection::getInstance()->getConnection();
+        // Trim whitespace from the email
+        $email = trim($email);
+    
+        // Query to check if the user exists based on their email
+        $query = "SELECT Person.ID as PersonID, Person.Name, Person.Age, Person.Password, Person.Email, Person.AddressID, Donor.ID as DonorID
+                  FROM Volunteer 
+                  INNER JOIN Person ON Donor.PersonID = Person.ID 
+                  WHERE Person.Email = ?";
+    
+        // Prepare the SQL statement
+        $stmt = $conn->prepare($query);
+        if (!$stmt) {
+            return false;
+        }
+    
+        // Bind the email parameter to the query
+        $stmt->bind_param("s", $email);
+    
+        // Execute the statement
+        if (!$stmt->execute()) {
+            return false;
+        }
+    
+        // Bind the result to the object's properties
+        $stmt->bind_result($this->personId, $this->name, $this->age, $this->password, $this->email, $this->addressId, $this->id);
+    
+        // Fetch the result
+        if ($stmt->fetch()) {
+            // User with the given email exists
+            // Verify the entered password with the stored hashed password
+            if ($email === $this->email && $enteredPassword === $this->password) {
+                // Password is correct
+                return true;
+            } else {
+                return false;
+            }
+        } else {
+            // User not found
+            return false;
+        }
+    }
+
+    public function signup($name, $age, $password, $email) {
+        // Input validation (you can expand this to include more robust checks)
+        if (empty($name) || empty($age) || empty($password) || empty($email)) {
+            return false;
+        }
+    
+        // Set class properties
+        $this->name = $name;
+        $this->age = $age;
+        $this->password = $password;
+        $this->email = $email;
+    
+        // Use the createPerson method to add the new user to the database
+        $result = $this->createVolunteer();
+    
+        if ($result) {
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    public function createVolunteer() {
+        $conn = DBConnection::getInstance()->getConnection();
+
         // First, create the associated Person record
         if ($this->id === null) {
-            $personCreated = $this->createPerson($dbConnection);
+            $personCreated = $this->createPerson($conn);
             if (!$personCreated) {
                 return false;
             }
@@ -118,9 +188,9 @@ class Volunteer extends Person {
 
         // Create Volunteer record
         $query = "INSERT INTO Volunteer (PersonID, Job, VolunteerHours, Available, Gender) VALUES (?, ?, ?, ?, ?)";
-        $stmt = $dbConnection->prepare($query);
+        $stmt = $conn->prepare($query);
         if (!$stmt) {
-            echo "Prepare failed: " . $dbConnection->error;
+            echo "Prepare failed: " . $conn->error;
             return false;
         }
 
@@ -129,17 +199,18 @@ class Volunteer extends Person {
         if (!$result) {
             echo "Execute failed: " . $stmt->error;
         } else {
-            $this->id = $dbConnection->insert_id;
+            $this->id = $conn->insert_id;
         }
         return $result;
     }
 
-    public function updateVolunteer($dbConnection) {
+    public function updateVolunteer() {
+        $conn = DBConnection::getInstance()->getConnection();
         // Update the Person record (related to the volunteer)
         $query = "UPDATE Person SET Name = ?, Age = ?, Password = ?, Email = ?, AddressID = ? WHERE ID = ?";
-        $stmt = $dbConnection->prepare($query);
+        $stmt = $conn->prepare($query);
         if (!$stmt) {
-            echo "Prepare failed: " . $dbConnection->error;
+            echo "Prepare failed: " . $conn->error;
             return false;
         }
 
@@ -153,9 +224,9 @@ class Volunteer extends Person {
 
         // Update Volunteer record
         $query = "UPDATE Volunteer SET Job = ?, VolunteerHours = ?, Available = ?, Gender = ? WHERE ID = ?";
-        $stmt = $dbConnection->prepare($query);
+        $stmt = $conn->prepare($query);
         if (!$stmt) {
-            echo "Prepare failed: " . $dbConnection->error;
+            echo "Prepare failed: " . $conn->error;
             return false;
         }
 
@@ -168,16 +239,18 @@ class Volunteer extends Person {
 
         return true;
     }
-    public function createPerson($dbConnection) {
+    public function createPerson() {
+        $conn = DBConnection::getInstance()->getConnection();
+
         if ($this->id !== null) {
             echo "Error: Cannot create person with an existing ID.";
             return false;
         }
 
         $query = "INSERT INTO Person (Name, Age, Password, Email, AddressID) VALUES (?, ?, ?, ?, ?)";
-        $stmt = $dbConnection->prepare($query);
+        $stmt = $conn->prepare($query);
         if (!$stmt) {
-            echo "Prepare failed: " . $dbConnection->error;
+            echo "Prepare failed: " . $conn->error;
             return false;
         }
 
@@ -188,22 +261,23 @@ class Volunteer extends Person {
             echo "Execute failed: " . $stmt->error;
         } else {
             // After person is created, set the ID and personId
-            $this->id = $dbConnection->insert_id; // Set the ID to the newly created ID
+            $this->id = $conn->insert_id; // Set the ID to the newly created ID
             $this->personId = $this->id; // Set the personId for the Donor
         }
         return $result;
     }
 
-    public function readVolunteer($dbConnection, $volunteerId) {
+    public function readVolunteer($volunteerId) {
+        $conn = DBConnection::getInstance()->getConnection();
         // Load the volunteer's details based on their ID
         $query = "SELECT Person.ID as PersonID, Person.Name, Person.Age, Person.Password, Person.Email, Person.AddressID, Volunteer.ID as VolunteerID, Volunteer.Job, Volunteer.VolunteerHours, Volunteer.Available, Volunteer.Gender
                   FROM Volunteer 
                   INNER JOIN Person ON Volunteer.PersonID = Person.ID 
                   WHERE Volunteer.ID = ?";
         
-        $stmt = $dbConnection->prepare($query);
+        $stmt = $conn->prepare($query);
         if (!$stmt) {
-            echo "Prepare failed: " . $dbConnection->error;
+            echo "Prepare failed: " . $conn->error;
             return false;
         }
 
@@ -219,17 +293,18 @@ class Volunteer extends Person {
         }
     }
 
-    public function delete($dbConnection, $volunteerId) {
+    public function delete($volunteerId) {
+        $conn = DBConnection::getInstance()->getConnection();
         if ($volunteerId === null) {
             echo "Error: Person ID is not set.";
             return false;
         }
 
         $query = "UPDATE Person SET IsDeleted = true WHERE ID = ?";
-        $stmt = $dbConnection->prepare($query);
+        $stmt = $conn->prepare($query);
 
         if (!$stmt) {
-            echo "Prepare failed: " . $dbConnection->error;
+            echo "Prepare failed: " . $conn->error;
             return false;
         }
 
