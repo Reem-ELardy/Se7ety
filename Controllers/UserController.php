@@ -1,7 +1,6 @@
 <?php
 
-
-require_once __DIR__ . '/../Design Pattren/PersonFactory.php';
+require_once 'PersonFactory.php';
 
 
 class UserController {
@@ -24,7 +23,6 @@ class UserController {
             if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
                 $error = "Invalid email, please enter it again, e.g., email23@example.com";
             }
-
             
             $IsValidPassword = strlen($password) >= 8 &&
                                preg_match('/[A-Za-z]/', $password) &&
@@ -39,25 +37,22 @@ class UserController {
                 print("\nI am here");
                 print($role);
                 $result = $PersonFactory->SignupFactory($name, $age, $email, $password, $role);
-                // $result = $this->Signup($name, $age, $email, $password, $role);
-                //print($result);
 
                 if ($result == false) {
-                    
                     $error = "This user already exists.";
                     header("Location:/../Views\Login.php");
-                    // exit();
+                    exit();
                 } else {
-                    // $error = "This user already exists.";
-                    // header("Location: Login.php");
-                    // exit();
+                    print("\nDone");
+                    $view= "display";
+                   
+                    $this->Display($result,$role);
                 }
             }
         }
-        //require_once __DIR__ . '/../Views/Signup.php';
     }
 
-
+    
 
     public function LoginValidation() {
         $PersonFactory= new PersonFactory();
@@ -72,7 +67,6 @@ class UserController {
             if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
                 $error = "Invalid email, please enter it again.";
             }
-
 
             if (empty($error)) {
               $result = $PersonFactory->LoginFactory($email, $password, $role);
@@ -94,24 +88,23 @@ class UserController {
       
     }
 
- 
-
     public function Display($result, $role){
         $data = [
+            'Id' => $result->getId(),
             'name' => $result-> getName(),
             'age' => $result->getAge(),
             //'address' => $result[ 'address'],
             'email' => $result ->getEmail(),
             'role'=> $role,
-           
         ];
-
 
         require __DIR__ ."/../Views/display.php";
     }
 
     public function updateUser() {
+        $user = NULL;
         if ($_SERVER["REQUEST_METHOD"] == "POST") {
+            $Id = $_POST["Id"];
             $name = trim($_POST["name"]);
             $age = trim($_POST["age"]);
             $email = $_POST["email"];
@@ -140,6 +133,7 @@ class UserController {
             switch ($role) {
                 case 'Volunteer':
                     $user = new Volunteer();
+                    $result = $user->readVolunteer($Id);
                     $user->setName($name);
                     $user->setAge($age);
                     $user->setEmail($email);
@@ -149,6 +143,7 @@ class UserController {
                     break;
                 case 'Donor':
                     $user = new Donor();
+                    $result = $user->readDonor($Id);
                     $user->setName($name);
                     $user->setAge($age);
                     $user->setEmail($email);
@@ -157,6 +152,7 @@ class UserController {
                     break;
                 case 'Patient':
                     $user = new Patient();
+                    $result = $user->readPatient($Id);
                     $user->setName($name);
                     $user->setAge($age);
                     $user->setEmail($email);
@@ -167,15 +163,13 @@ class UserController {
         
             // Check if the update was successful
             if ($result) {
-                echo "Update successful!";
+                $this->Display($user, $role);
                 // Optionally, redirect back to the display view or another page
             } else {
-                echo "Update failed.";
+                require __DIR__ ."/../Views/Update.php";
             }
         }
     }
-
-
 
     public function Delete($email, $role){
          //get user name
@@ -203,6 +197,21 @@ class UserController {
         require __DIR__ ."/../Views/delete.php";
     }
     
+    public function Update() {
+
+        if ($_SERVER["REQUEST_METHOD"] == "POST") {
+            data:[
+                'Id' => $_POST["Id"],
+                'name' => trim($_POST["name"]),
+                'age' => trim($_POST["age"]),
+                //'address' => $result[ 'address'],
+                'email' => $_POST["email"],
+                'role'=> $_POST["role"],
+            ];
+
+            require __DIR__ ."/../Views/Update.php";
+        }
+    }
     
 }
 ?>
