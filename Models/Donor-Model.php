@@ -46,14 +46,14 @@ class Donor extends Person {
 
     public function login($email, $enteredPassword) {
         $conn = DBConnection::getInstance()->getConnection();
-
         $email = trim($email);
-        $query = "SELECT Person.ID as PersonID, Person.Name, Person.Age, Person.Password, Person.Email, Person.AddressID, Donor.ID as DonorID, Person.IsDeleted
+        $query = "SELECT Person.ID as PersonID, Person.Name, Person.Age, Person.Password, Person.Email, Person.AddressID, Donor.ID as DonorID
                   FROM Donor 
-                  INNER JOIN Person ON Dnor.PersonID = Person.ID 
+                  INNER JOIN Person ON Donor.PersonID = Person.ID 
                   WHERE Person.Email = ?
                   ORDER BY Person.ID DESC
                   LIMIT 1";
+                  
         $stmt = $conn->prepare($query);
         if (!$stmt) {
             return false;
@@ -64,12 +64,13 @@ class Donor extends Person {
             return false;
         }
 
-        $stmt->bind_result($this->personId, $this->name, $this->age, $this->password, $this->email, $this->addressId, $this->id, $this->IsDeleted);
-        if ($stmt->fetch() && $enteredPassword === $this->password && !$this->IsDeleted) {
+        $stmt->bind_result($this->personId, $this->name, $this->age, $this->password, $this->email, $this->addressId, $this->id);
+        if ($stmt->fetch() && $enteredPassword === $this->password) {
             return true;
         }
         return false;
     }
+    
     
     //public function signup($name, $age, $password, $email, $addressId)
     public function signup($name, $age, $password, $email) {
@@ -100,6 +101,7 @@ class Donor extends Person {
     
 
     }
+    
 
     // Update Donor record
     public function updateDonor() {
@@ -203,10 +205,13 @@ class Donor extends Person {
         $email = trim($email);
     
         
-        $query = "SELECT Person.ID as PersonID, Person.Email, Person.IsDeleted, Donor.ID as DonorID
+        $query = "SELECT Person.ID as PersonID, Person.Email, Donor.ID as DonorID,Person.IsDeleted
                   FROM Donor 
                   INNER JOIN Person ON Donor.PersonID = Person.ID 
-                  WHERE Person.Email = ? ";
+                  WHERE Person.Email = ? 
+                  AND Person.IsDeleted = 0
+                  ORDER BY Person.ID DESC
+                  LIMIT 1";
     
        
         $stmt = $conn->prepare($query);
@@ -220,7 +225,7 @@ class Donor extends Person {
             return false; 
         }
     
-        $stmt->bind_result($this->personId, $this->email,$this->IsDeleted, $this->id);
+        $stmt->bind_result($this->personId, $this->email, $this->id,$this->IsDeleted);
     
         if ($stmt->fetch()) {
             if ($this->IsDeleted) {
