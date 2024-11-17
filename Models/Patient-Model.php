@@ -82,11 +82,12 @@ class Patient extends Person {
             return false;
         }
 
-        $stmt->bind_param("i", $this->personId);
+        $stmt->bind_param("i", $this->id);
         $result = $stmt->execute();
         if (!$result) {
             echo "Execute failed: " . $stmt->error;
         } else {
+            $this->personId = $this->id;
             $this->id = $conn->insert_id;
         }
         return $result;
@@ -132,46 +133,29 @@ class Patient extends Person {
     public function login($email, $enteredPassword) {
         $conn = DBConnection::getInstance()->getConnection();
 
-        // Trim whitespace from the email
         $email = trim($email);
-    
-        // Query to check if the user exists based on their email
-        $query = "SELECT Person.ID as PersonID, Person.Name, Person.Age, Person.Password, Person.Email, Person.AddressID, Donor.ID as DonorID
+        $query = "SELECT Person.ID as PersonID, Person.Name, Person.Age, Person.Password, Person.Email, Person.AddressID, Patient.ID as PatientID
                   FROM Patient 
-                  INNER JOIN Person ON Donor.PersonID = Person.ID 
-                  WHERE Person.Email = ?";
-    
-        // Prepare the SQL statement
+                  INNER JOIN Person ON Patient.PersonID = Person.ID 
+                  WHERE Person.Email = ?
+                  ORDER BY Person.ID DESC
+                  LIMIT 1";
+
         $stmt = $conn->prepare($query);
-        if (!$stmt) {
+        if (!$stmt) { 
             return false;
         }
-    
-        // Bind the email parameter to the query
+
         $stmt->bind_param("s", $email);
-    
-        // Execute the statement
         if (!$stmt->execute()) {
             return false;
         }
-    
-        // Bind the result to the object's properties
+
         $stmt->bind_result($this->personId, $this->name, $this->age, $this->password, $this->email, $this->addressId, $this->id);
-    
-        // Fetch the result
-        if ($stmt->fetch()) {
-            // User with the given email exists
-            // Verify the entered password with the stored hashed password
-            if ($email === $this->email && $enteredPassword === $this->password) {
-                // Password is correct
-                return true;
-            } else {
-                return false;
-            }
-        } else {
-            // User not found
-            return false;
+        if ($stmt->fetch() && $enteredPassword === $this->password) {
+            return true;
         }
+        return false;
     }
 
     public function signup($name, $age, $password, $email) {
@@ -179,52 +163,26 @@ class Patient extends Person {
         if (empty($name) || empty($age) || empty($password) || empty($email)) {
             return false;
         }
-    
-        // Hash the password for security
-
-    
-        // Set class properties
-        $this->name = $name;
-        $this->age = $age;
-        $this->password = $password;
-        $this->email = $email;
-    
-        // Use the createPerson method to add the new user to the database
-        $result = $this->createPatient();
-    
-        if ($result) {
-            return true;
-        } else {
+        $IsPersonExist= $this-> findByEmail($email);
+        if ($IsPersonExist) {
             return false;
         }
-    }
-
-    public function createPerson() {
-        $conn = DBConnection::getInstance()->getConnection();
-
-        if ($this->id !== null) {
-            echo "Error: Cannot create person with an existing ID.";
-            return false;
+        else {
+                    // Set class properties
+            $this->name = $name;
+            $this->age = $age;
+            $this->password = $password;
+            $this->email = $email;
+        
+            // Use the createPerson method to add the new user to the database
+            $result = $this->createPatient();
+        
+            if ($result) {
+                return true;
+            } else {
+                return false;
+            }
         }
-
-        $query = "INSERT INTO Person (Name, Age, Password, Email, AddressID) VALUES (?, ?, ?, ?, ?)";
-        $stmt = $conn->prepare($query);
-        if (!$stmt) {
-            echo "Prepare failed: " . $conn->error;
-            return false;
-        }
-
-        // Accessing parent class properties with parent::
-        $stmt->bind_param("sisss", $this->name, $this->age, $this->password, $this->email, $this->addressId);
-        $result = $stmt->execute();
-        if (!$result) {
-            echo "Execute failed: " . $stmt->error;
-        } else {
-            // After person is created, set the ID and personId
-            $this->id = $conn->insert_id; // Set the ID to the newly created ID
-            $this->personId = $this->id; // Set the personId for the Donor
-        }
-        return $result;
     }
 
     public function readPatient($patientId) {
@@ -281,5 +239,46 @@ class Patient extends Person {
         
         return $result;
     }
+
+    public function findByEmail($email) {
+        
+       
+        $conn = DBConnection::getInstance()->getConnection();
+    
+       
+        $email = trim($email);
+    
+        
+        $query = "SELECT Person.ID as PersonID, Person.Email, Person.IsDeleted, Patient.ID as PatientID
+        FROM Patient
+        INNER JOIN Person ON Patient.PersonID = Person.ID
+        WHERE Person.Email = ?";
+
+    
+        $stmt = $conn->prepare($query);
+        if (!$stmt) {
+            return false; 
+        }
+        
+        $stmt->bind_param("s", $email);
+    
+        if (!$stmt->execute()) {
+            return false; 
+        }
+    
+        $stmt->bind_result($this->personId, $this->email,$this->IsDeleted, $this->id);
+    
+        if ($stmt->fetch()) {
+            if ($this->IsDeleted) {
+                return false;
+            }
+            else {
+                return true;
+            }
+        } else {
+            return false;
+        }
+    }
+
 }
 ?>
