@@ -1,6 +1,5 @@
 <?php
 require_once 'InKindDonation.php';
-// Enum for Medical Types
 enum MedicalType: string {
     case MEDICINE = 'Medicine';
     case TOOL = 'Tool';
@@ -17,10 +16,9 @@ class Medical {
         $this->name = $name;
         $this->type = $type;
         $this->expirationDate = $expirationDate;
-        $this->quantity = $quantity; // Initialize Quantity
+        $this->quantity = $quantity; 
     }
 
-    // Getter methods
     public function getId(): ?int {
         return $this->id;
     }
@@ -45,14 +43,14 @@ class Medical {
         return $this->expirationDate < new DateTime();
     }
 
-    // Setter for Quantity (if needed)
+
     public function setQuantity(int $quantity): void {
         $this->quantity = $quantity;
     }
 
-    // CRUD Operations
+   
 
-    // Create a new Medical record
+
     public function createMedical(): bool {
         $conn = DBConnection::getInstance()->getConnection();
 
@@ -81,7 +79,6 @@ class Medical {
         return $result;
     }
 
-    // Read a Medical record by ID
     public static function readMedical(int $id): ?Medical {
         $conn = DBConnection::getInstance()->getConnection();
 
@@ -101,15 +98,14 @@ class Medical {
                 $row['Name'],
                 MedicalType::from($row['Type']),
                 new DateTime($row['ExpirationDate']),
-                (int)$row['Quantity'] // Read Quantity from DB
+                (int)$row['Quantity'] 
             );
         }
 
         $stmt->close();
-        return null; // No record found
+        return null; 
     }
 
-    // Update a Medical record
     public function updateMedical(): bool {
         if (!$this->id) {
             throw new Exception("Cannot update a record without an ID.");
@@ -117,7 +113,7 @@ class Medical {
 
         $conn = DBConnection::getInstance()->getConnection();
 
-        $query = "UPDATE Medical SET Name = ?, Type = ?, ExpirationDate = ?, Quantity = ? WHERE ID = ?"; // Added Quantity field
+        $query = "UPDATE Medical SET Name = ?, Type = ?, ExpirationDate = ?, Quantity = ? WHERE ID = ?"; 
         $stmt = $conn->prepare($query);
 
         if (!$stmt) {
@@ -127,10 +123,10 @@ class Medical {
         $name = $this->name;
         $type = $this->type->value;
         $expirationDate = $this->expirationDate->format('Y-m-d');
-        $quantity = $this->quantity; // Get quantity
+        $quantity = $this->quantity;
         $id = $this->id;
 
-        $stmt->bind_param("sssii", $name, $type, $expirationDate, $quantity, $id); // Bind Quantity
+        $stmt->bind_param("sssii", $name, $type, $expirationDate, $quantity, $id); 
         $result = $stmt->execute();
 
         if (!$result) {
@@ -141,7 +137,7 @@ class Medical {
         return $result;
     }
 
-    // Delete a Medical record
+  
     public function deleteMedical(): bool {
         if (!$this->id) {
             throw new Exception("Cannot delete a record without an ID.");

@@ -3,7 +3,7 @@ class MoneyDonation extends Donation {
     private float $minAmount = 10.0;
 
     public function __construct(IDonationMethodStrategy $donationMethod) {
-        // Pass the donationMethod and DonationType::Money to the parent constructor
+       
         parent::__construct($donationMethod, DonationType::Money);
     }
 
@@ -15,8 +15,8 @@ class MoneyDonation extends Donation {
     }
 
     public function process(float $amount, int $quantity, string $itemDescription): void {
-        $this->validateAmount($amount); // Validate before processing
-        parent::process($amount, $quantity, $itemDescription); // Call parent logic
+        $this->validateAmount($amount);
+        parent::process($amount, $quantity, $itemDescription); 
     }
 }
 ?>
