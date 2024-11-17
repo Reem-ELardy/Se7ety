@@ -9,23 +9,18 @@ class Donor extends Person {
         $this->personId = $personId;
     }
 
-
     // Getters
     public function getId() {
         return $this->id;
     }
-
 
     // Setters
     public function setId($id) {
         $this->id = $id;
     }
 
-
-    public function createDonar() {
+    public function createDonor() {
         $conn = DBConnection::getInstance()->getConnection();
-        
-        // First, create the associated Person record
         if ($this->id === null) {
             $personCreated = $this->createPerson();
             if (!$personCreated) {
@@ -33,71 +28,48 @@ class Donor extends Person {
             }
         }
 
-        // Create Donor record
         $query = "INSERT INTO Donor (PersonID) VALUES (?)";
         $stmt = $conn->prepare($query);
         if (!$stmt) {
             return false;
         }
-        $stmt->bind_param("i", $this->personId);
+
+        $stmt->bind_param("i", $this->id);
         $result = $stmt->execute();
-        if (!$result) {
-        } else {
-            // Set donor ID (if needed)
+        if ($result) {
+            $this->personId = $this->id;
             $this->id = $conn->insert_id;
-            $this->personId = $this->id; // Set the personId for the Donor
         }
         return $result;
     }
 
 
-
     public function login($email, $enteredPassword) {
         $conn = DBConnection::getInstance()->getConnection();
 
-        // Trim whitespace from the email
         $email = trim($email);
-    
-        // Query to check if the user exists based on their email
-        $query = "SELECT Person.ID as PersonID, Person.Name, Person.Age, Person.Password, Person.Email, Person.AddressID, Donor.ID as DonorID
+        $query = "SELECT Person.ID as PersonID, Person.Name, Person.Age, Person.Password, Person.Email, Person.AddressID, Donor.ID as DonorID, Person.IsDeleted
                   FROM Donor 
-                  INNER JOIN Person ON Donor.PersonID = Person.ID 
-                  WHERE Person.Email = ?";
-    
-        // Prepare the SQL statement
+                  INNER JOIN Person ON Dnor.PersonID = Person.ID 
+                  WHERE Person.Email = ?
+                  ORDER BY Person.ID DESC
+                  LIMIT 1";
         $stmt = $conn->prepare($query);
         if (!$stmt) {
             return false;
         }
-    
-        // Bind the email parameter to the query
+
         $stmt->bind_param("s", $email);
-    
-        // Execute the statement
         if (!$stmt->execute()) {
             return false;
         }
-    
-        // Bind the result to the object's properties
-        $stmt->bind_result($this->personId, $this->name, $this->age, $this->password, $this->email, $this->addressId, $this->id);
-    
-        // Fetch the result
-        if ($stmt->fetch()) {
-            // User with the given email exists
-            // Verify the entered password with the stored hashed password
-            if ($email === $this->email && $enteredPassword === $this->password) {
-                // Password is correct
-                return true;
-            } else {
-                return false;
-            }
-        } else {
-            // User not found
-            return false;
+
+        $stmt->bind_result($this->personId, $this->name, $this->age, $this->password, $this->email, $this->addressId, $this->id, $this->IsDeleted);
+        if ($stmt->fetch() && $enteredPassword === $this->password && !$this->IsDeleted) {
+            return true;
         }
+        return false;
     }
-    
-    
     
     //public function signup($name, $age, $password, $email, $addressId)
     public function signup($name, $age, $password, $email) {
@@ -105,24 +77,29 @@ class Donor extends Person {
         if (empty($name) || empty($age) || empty($password) || empty($email)) {
             return false;
         }
-    
-        // Set class properties
-        $this->name = $name;
-        $this->age = $age;
-        $this->password = $password;
-        $this->email = $email;
-    
-        // Use the createPerson method to add the new user to the database
-        $result = $this->createDonar();
-    
-        if ($result) {
-            return true;
-        } else {
+        $IsPersonExist= $this-> findByEmail($email);
+        if ($IsPersonExist) {
             return false;
         }
-    }
+        else {
+                    // Set class properties
+            $this->name = $name;
+            $this->age = $age;
+            $this->password = $password;
+            $this->email = $email;
+        
+            // Use the createPerson method to add the new user to the database
+            $result = $this->createDonor();
+        
+            if ($result) {
+                return true;
+            } else {
+                return false;
+            }
+        }
     
 
+    }
 
     // Update Donor record
     public function updateDonor() {
@@ -215,6 +192,46 @@ class Donor extends Person {
         
         return $result;
     }
+
+
+    public function findByEmail($email) {
+        
+       
+        $conn = DBConnection::getInstance()->getConnection();
     
+       
+        $email = trim($email);
+    
+        
+        $query = "SELECT Person.ID as PersonID, Person.Email, Person.IsDeleted, Donor.ID as DonorID
+                  FROM Donor 
+                  INNER JOIN Person ON Donor.PersonID = Person.ID 
+                  WHERE Person.Email = ? ";
+    
+       
+        $stmt = $conn->prepare($query);
+        if (!$stmt) {
+            return false; 
+        }
+        
+        $stmt->bind_param("s", $email);
+    
+        if (!$stmt->execute()) {
+            return false; 
+        }
+    
+        $stmt->bind_result($this->personId, $this->email,$this->IsDeleted, $this->id);
+    
+        if ($stmt->fetch()) {
+            if ($this->IsDeleted) {
+                return false;
+            }
+            else {
+                return true;
+            }
+        } else {
+            return false;
+        }
+    }
 }
 ?>
