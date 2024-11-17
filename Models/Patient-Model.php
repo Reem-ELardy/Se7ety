@@ -62,48 +62,58 @@ class Patient extends Person {
     public function setNeedslist($needslist) {
         $this->needslist = $needslist;
     }
-
     public function createPatientNeed(int $medicalID, int $patientID, String $status) {
         $conn = DBConnection::getInstance()->getConnection();
+
         // Prepare the insert statement
         $query = "INSERT INTO PatientNeed (MedicalID, PatientID, Status) VALUES (?, ?, ?)";
         $stmt = $conn->prepare($query);
         if (!$stmt) {
             return false;
         }
+
         $stmt->bind_param("iis", $medicalID, $patientID, $status);
         $result = $stmt->execute();
         $stmt->close();
+
         return $result;
     }
+
     // Function to update an existing PatientNeed record
     public function updatePatientNeed(int $medicalID, int $patientID, String $status) {
         $conn = DBConnection::getInstance()->getConnection();
+
         // Prepare the update statement
         $query = "UPDATE PatientNeed SET MedicalID = ?, PatientID = ?, Status = ? WHERE MedicalID = ? AND PatientID = ?";
         $stmt = $conn->prepare($query);
         if (!$stmt) {
             return false;
         }
+
         $stmt->bind_param("iisii", $medicalID, $patientID, $status, $medicalID, $patientID);
         $result = $stmt->execute();
         $stmt->close();
+
         return $result;
     }
+
     // Function to read a PatientNeed record from the database
     public function readPatientNeed(int $medicalID, int $patientID): ?array {
         $conn = DBConnection::getInstance()->getConnection();
+
         // Prepare the select statement
         $query = "SELECT MedicalID, PatientID, Status FROM PatientNeed WHERE MedicalID = ? AND PatientID = ?";
         $stmt = $conn->prepare($query);
         if (!$stmt) {
             return null;
         }
+
         // Bind parameters and execute the query
         $stmt->bind_param("ii", $medicalID, $patientID);
         $stmt->execute();
         $stmt->bind_result($medicalID, $patientID, $status);
         $stmt->fetch();
+
         if ($medicalID && $patientID) {
             $result = [
                 'MedicalID' => $medicalID,
@@ -113,22 +123,27 @@ class Patient extends Person {
             $stmt->close();
             return $result;
         }
+
         $stmt->close();
         return null;
     }
+
     // Function to delete a PatientNeed record
     public function deletePatientNeed(int $medicalID, int $patientID): bool {
         $conn = DBConnection::getInstance()->getConnection();
+
         // Prepare the delete statement
         $query = "DELETE FROM PatientNeed WHERE MedicalID = ? AND PatientID = ?";
         $stmt = $conn->prepare($query);
         if (!$stmt) {
             return false;
         }
+
         // Bind parameters and execute the delete
         $stmt->bind_param("ii", $medicalID, $patientID);
         $result = $stmt->execute();
         $stmt->close();
+
         return $result;
     }
 

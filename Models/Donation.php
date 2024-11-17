@@ -7,15 +7,18 @@ enum DonationType: string {
 
 class Donation {
     protected IDonationMethodStrategy $donationMethod;
-    private ?int $id = null;
+    private ?int $id = null; // Allow null value
     protected DonationType $donationtype;
-    private ?float $cashamount = null; 
+    private ?float $cashamount = null; // Allow null value
 
     public function __construct(IDonationMethodStrategy $donationMethod, DonationType $donationtype, ?float $cashamount = null) {
         $this->donationMethod = $donationMethod;
         $this->donationtype = $donationtype;
-        $this->cashamount = $cashamount; 
-     
+        $this->cashamount = $cashamount; // Optional, defaults to null
+    
+
+
+        // Ensure cash amount is only set for Medical donations
         if ($donationtype === DonationType::Medical && $cashamount !== null) {
             $this->cashamount = $cashamount;
         } elseif ($donationtype === DonationType::Money && $cashamount !== null) {
@@ -28,11 +31,11 @@ class Donation {
     }
 
 
-    public function getDonationId(): int {
+    public function getId(): int {
         return $this->id;
     }
 
-    public function setDonationId(int $id): void {
+    public function setId(int $id): void {
         $this->id = $id;
     }
 
@@ -59,17 +62,17 @@ class Donation {
     }
 
     public static function Donate(DonationType $type, string $method, $additionalParams = []): Donation {
-
+        // Choose donation type
         if ($type === DonationType::Medical) {
             $donationMethod = new InKindDonation();
             $donation = new MedicalDonation($donationMethod);
 
-            
+            // Pass cash amount if provided
             if (isset($additionalParams['cashamount'])) {
                 $donation->setCashAmount($additionalParams['cashamount']);
             }
         } elseif ($type === DonationType::Money) {
-      
+            // Choose payment method
             switch ($method) {
                 case "Cash":
                     $donationMethod = new CashDonation();
@@ -96,8 +99,10 @@ class Donation {
     }
 
     public function createDonation() {
-      
+        // Get the database connection from the singleton instance
         $conn = DBConnection::getInstance()->getConnection();
+
+        // Insert the Donation record
         $query = "INSERT INTO DONATION (ID, Type, CashAmount) VALUES (?, ?, ?)";
         $stmt = $conn->prepare($query);
 
@@ -108,10 +113,13 @@ class Donation {
         $id = $this->id;
         $type = $this->donationtype->value;
         $cashamount = $this->cashamount;
+
+        // Bind parameters and execute the query
         $stmt->bind_param("isi", $id, $type, $cashamount);
         $result = $stmt->execute();
 
         if ($result) {
+            // Set the donation ID
             $this->id = $conn->insert_id;
         } else {
             throw new Exception("Execute failed: " . $stmt->error);
@@ -121,6 +129,9 @@ class Donation {
         return $result;
     }
 
+
+
+ // Read a donation from the database by ID
  public static function readDonation(int $donationId): ?donation {
     $conn = DBConnection::getInstance()->getConnection();
     $query = "SELECT ID, Type, CashAmount FROM Donation WHERE ID = ?";
@@ -137,16 +148,19 @@ class Donation {
     if ($row = $result->fetch_assoc()) {
         $donationMethod = self::createDonationMethodFromType($row['Type']);
         $donation = new self($donationMethod, DonationType::from($row['Type']));
-        $donation->setDonationId($row['ID']);
+        $donation->setId($row['ID']);
         if ($row['Type'] === DonationType::Medical->value) {
             $donation->setCashAmount((float)$row['CashAmount']);
         }
         return $donation;
     } else {
-        return null; 
+        return null; // No donation found
     }
 }
 
+
+
+ // Update an existing donation in the database
  public function updateDonation(): bool {
     $conn = DBConnection::getInstance()->getConnection();
     $query = "UPDATE DONATION SET Type = ?, CashAmount = ? WHERE ID = ?";
@@ -171,6 +185,7 @@ class Donation {
     return $result;
 }
 
+// Delete a donation from the database by ID
 public function deleteDonation(): bool {
     $conn = DBConnection::getInstance()->getConnection();
     $query = "DELETE FROM DONATION WHERE ID = ?";
@@ -192,11 +207,11 @@ public function deleteDonation(): bool {
     return $result;
 }
 
-
+// Helper method to create the appropriate donation method strategy
 private static function createDonationMethodFromType(string $type): IDonationMethodStrategy {
     return match ($type) {
         DonationType::Medical->value => new InKindDonation(),
-        DonationType::Money->value => new CashDonation(), 
+        DonationType::Money->value => new CashDonation(), // Default for money donations
         default => throw new Exception("Unknown donation type."),
     };
 }
