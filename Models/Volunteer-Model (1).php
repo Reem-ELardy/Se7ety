@@ -294,10 +294,7 @@ class Volunteer extends Person {
         $query = "SELECT Person.ID as PersonID, Person.Email, Person.IsDeleted, Volunteer.ID as VolunteerID
                   FROM Volunteer 
                   INNER JOIN Person ON Volunteer.PersonID = Person.ID 
-                  WHERE Person.Email = ?
-                  AND Person.IsDeleted = 0
-                  ORDER BY Person.ID DESC
-                  LIMIT 1";
+                  WHERE Person.Email = ? ";
     
        
         $stmt = $conn->prepare($query);
@@ -312,8 +309,6 @@ class Volunteer extends Person {
         }
     
         $stmt->bind_result($this->personId, $this->email,$this->IsDeleted, $this->id);
-
-        echo $this->personId;
     
         if ($stmt->fetch()) {
             if ($this->IsDeleted) {
@@ -327,5 +322,4 @@ class Volunteer extends Person {
         }
     }
 }
-
 ?>
