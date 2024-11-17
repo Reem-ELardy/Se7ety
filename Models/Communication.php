@@ -170,7 +170,6 @@ class Communication {
     
             return true;
         } else {
-            echo "Communication not found.\n";
             return false;
         }
     }
@@ -190,12 +189,6 @@ class Communication {
 
     $stmt->bind_param("i", $communicationId);
     $result = $stmt->execute();
-
-    if (!$result) {
-        echo "Execute failed: " . $stmt->error;
-    } else {
-        echo "Communication with ID " . $communicationId . " marked as deleted.\n";
-    }
 
     return $result;
 }
