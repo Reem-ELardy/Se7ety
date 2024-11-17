@@ -1,81 +1,93 @@
 html, body {
-    height: 100%;
-    margin: 0;
-    padding: 0;
-  }
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
 
-  .logo {
-    width: 100px; 
-    margin-bottom: 20px; 
-  }
-  body {
-    font-family: 'Poppins', sans-serif;
-    background-image: url('./Assets/composition-still-life-friendship-day-elements.jpg');  
-    background-size: cover; 
-    background-position: center; 
-    background-repeat: no-repeat; 
-    display: flex;
-    justify-content: center;
-    align-items: center;
-  }
+.logo {
+  width: 100px; 
+  margin-bottom: 20px; 
+}
+body {
+  font-family: 'Poppins', sans-serif;
+  background-image: url('./Assets/composition-still-life-friendship-day-elements.jpg');  
+  background-size: cover; 
+  background-position: center; 
+  background-repeat: no-repeat; 
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
 
-  .signup-container {
-    background-color: rgba(255, 255, 255, 0.9); 
-    padding: 40px;
-    border-radius: 10px;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-    width: 350px;
-    text-align: center;
-  }
+.signup-container {
+  background-color: rgba(255, 255, 255, 0.9); 
+  padding: 40px;
+  border-radius: 10px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  width: 350px;
+  text-align: center;
+}
 
-  .signup-container h2 {
-    margin-bottom: 20px;
-    color: #2C3E50;
-  }
+.signup-container h2 {
+  margin-bottom: 20px;
+  color: #2C3E50;
+}
 
-  .input-field {
-    width: 100%;
-    padding: 10px;
-    margin: 10px 0;
-    border: 1px solid #ccc;
-    border-radius: 5px;
-    font-size: 16px;
-  }
+.input-field {
+  width: 100%; /* Ensures full width for consistency */
+  padding: 10px; /* Same padding for all fields */
+  margin: 10px 0; /* Space between fields */
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  font-size: 16px;
+  box-sizing: border-box; /* Includes padding in width calculation */
+}
 
-  .radio-group {
-    text-align: left;
-    margin: 15px 0;
-  }
+select.input-field {
+  appearance: none; /* Removes default browser styling */
+  background-color: #fff;
+  background-image: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxNiIgaGVpZ2h0PSIxNiIgdmlld0JveD0iMCAwIDE2IDE2Ij48cGF0aCBkPSJNNC4wMTIgNi4yOThsNC40OTcgNC40OTZMMTMuMDEyIDYuMjk4aDEuNDEybC01LjU5NSA1LjU5N0wzLjg5OCA2LjI5OGgxLjExN3oiIGZpbGw9IiMwMDAiLz48L3N2Zz4=');
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  background-size: 12px;
+  padding-right: 30px; /* Space for dropdown arrow */
+  cursor: pointer;
+}
 
-  .radio-group label {
-    display: block;
-    font-size: 14px;
-    margin-bottom: 5px;
-    color: #555;
-  }
+.radio-group {
+  text-align: left;
+  margin: 15px 0;
+}
 
-  .radio-group input[type="radio"] {
-    margin-right: 10px;
-  }
+.radio-group label {
+  display: block;
+  font-size: 14px;
+  margin-bottom: 5px;
+  color: #555;
+}
 
-  .submit-btn {
-    width: 100%;
-    background-color: #007bff;
-    color: white;
-    padding: 10px;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-    font-size: 16px;
-    margin-top: 10px;
-  }
+.radio-group input[type="radio"] {
+  margin-right: 10px;
+}
 
-  .submit-btn:hover {
-    background-color: #0056b3;
-  }
+.submit-btn {
+  width: 100%;
+  background-color: #007bff;
+  color: white;
+  padding: 10px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 16px;
+  margin-top: 10px;
+}
 
-  .login-link {
-    margin-top: 15px;
-    display: block;
-    color: #3498DB;
-  }
+.submit-btn:hover {
+  background-color: #0056b3;
+}
+
+.login-link {
+  margin-top: 15px;
+  display: block;
+  color: #3498DB;
+}

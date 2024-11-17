@@ -37,13 +37,15 @@ html, body {
 
   
   .input-field {
-	width: 100%;
-	padding: 10px;
-	margin: 10px 0;
+	width: 100%; /* Ensures full width for consistency */
+	padding: 10px; /* Same padding for all fields */
+	margin: 10px 0; /* Space between fields */
 	border: 1px solid #ccc;
 	border-radius: 5px;
 	font-size: 16px;
+	box-sizing: border-box; /* Includes padding in width calculation */
   }
+  
 
   
   .submit-btn {
