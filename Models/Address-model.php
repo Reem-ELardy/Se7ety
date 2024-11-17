@@ -32,6 +32,11 @@ class Address {
         }
         return false;
     }
+
+    public function getParentAddressID()
+    {
+        return $this->ParentAddressID;
+    }
     
     
 
@@ -121,15 +126,13 @@ class Address {
             return false;
         }
     }
-   
 
-       public function GetWholeAddress($id, & $wholeAddress){
+    public function GetWholeAddress($id, & $wholeAddress){
 
         if($this->read($id)){
             if($this->ParentAddressID != null){
                 $wholeAddress = $wholeAddress . ", " . $this->Name;
 
-               
                 $this-> GetWholeAddress($this->ParentAddressID, $wholeAddress);
 
             }
@@ -144,8 +147,6 @@ class Address {
         else {
             return false;
         }
-
-
 
     }
 
@@ -165,18 +166,22 @@ class Address {
     
    
         $stmt->execute();
+    
         
         $result = $stmt->get_result();
+    
         if (!$result || $result->num_rows === 0) {
             $stmt->close();
             return false; 
         }
+    
         
         while ($row = $result->fetch_assoc()) {
             if($row['IsDeleted']==1){continue;};
             $addressList[$row['ID']] = $row;
             $addressList[$row['ID']]['children'] = [];
         }
+    
         $stmt->close(); 
     
         
@@ -213,10 +218,10 @@ class Address {
                 }
             }
     
-            $stmt->close();
+            $stmt->close(); 
         }
     
-        return true;
+        return true; 
     }
     
          
