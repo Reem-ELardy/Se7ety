@@ -142,7 +142,7 @@ class Patient extends Person {
                   LIMIT 1";
 
         $stmt = $conn->prepare($query);
-        if (!$stmt) { 
+        if (!$stmt) {
             return false;
         }
 
@@ -249,12 +249,15 @@ class Patient extends Person {
         $email = trim($email);
     
         
-        $query = "SELECT Person.ID as PersonID, Person.Email, Person.IsDeleted, Patient.ID as PatientID
-        FROM Patient
-        INNER JOIN Person ON Patient.PersonID = Person.ID
-        WHERE Person.Email = ?";
-
+        $query = "SELECT Person.ID as PersonID, Person.Email, Patient.ID as PatientID, Person.IsDeleted
+                  FROM Patient 
+                  INNER JOIN Person ON Patient.PersonID = Person.ID 
+                  WHERE Person.Email = ? 
+                  AND Person.IsDeleted = 0
+                  ORDER BY Person.ID DESC
+                  LIMIT 1";
     
+       
         $stmt = $conn->prepare($query);
         if (!$stmt) {
             return false; 
@@ -266,7 +269,7 @@ class Patient extends Person {
             return false; 
         }
     
-        $stmt->bind_result($this->personId, $this->email,$this->IsDeleted, $this->id);
+        $stmt->bind_result($this->personId, $this->email, $this->id,$this->IsDeleted);
     
         if ($stmt->fetch()) {
             if ($this->IsDeleted) {
@@ -279,6 +282,5 @@ class Patient extends Person {
             return false;
         }
     }
-
 }
 ?>
