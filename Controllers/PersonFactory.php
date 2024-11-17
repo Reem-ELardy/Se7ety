@@ -34,29 +34,29 @@ class PersonFactory{
         else{
             return null;
         }
+        
     }
-
-    public function SignupFactory($name, $age, $email, $password, $role) {
+    public function SignupFactory($name, $age, $email, $password, $role,$AddressID) {
         $user = null;
         $result = null;
         print("\nI am here2");
         switch ($role) {
             case 'Volunteer':
                 print("\nDoner");
-                $user = new Volunteer(name:$name, age:$age, email:$email, password:$password);
+                $user = new Volunteer(name:$name, age:$age, email:$email, password:$password,addressId:$AddressID);
                 print("\nConstructor Done");
                 $result = $user->signup($name, $age, $password, $email);
                 print("\nDone");
                 break;
             case 'Donor':
                 print("\nDoner");
-                $user = new Donor(name:$name, age:$age, email:$email, password:$password);
+                $user = new Donor(name:$name, age:$age, email:$email, password:$password,addressId:$AddressID);
                 print("\nDoner Constructor Done");
                 $result = $user->signup($name, $age, $password, $email);
                 print("\nDone");
                 break;
             case 'Patient':
-                $user = new Patient(name:$name, age:$age, email:$email, password:$password);
+                $user = new Patient(name:$name, age:$age, email:$email, password:$password,addressId:$AddressID);
                 print("\nDoner Constructor Done");
                 $result = $user->signup($name, $age, $password, $email);
                 
@@ -72,6 +72,5 @@ class PersonFactory{
         }
         
     }
-   
 }
 ?>
