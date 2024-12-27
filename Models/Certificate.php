@@ -59,7 +59,6 @@ class Certificate {
 
     public function createCertificate(int $volunteerID, int $eventID) {
         $conn = DBConnection::getInstance()->getConnection();
-
         $query = "INSERT INTO Certificate (VolunteerID, EventID, IsDeleted) VALUES (?, ?, 0)";
         $stmt = $conn->prepare($query);
         if (!$stmt) {
@@ -114,6 +113,28 @@ class Certificate {
         }
 
         $stmt->close();
+        return null;
+    }
+
+    public function getCertificatesByVolunteerId(int $volunteerId): ?array {
+        $conn = DBConnection::getInstance()->getConnection();
+        $sql = "SELECT * FROM Certificate WHERE VolunteerID = ? AND IsDeleted = 0";
+        $stmt = $conn->prepare($sql);
+
+        if ($stmt) {
+            $stmt->bind_param('i', $volunteerId);
+            if ($stmt->execute()) {
+                $result = $stmt->get_result();
+                $certificates = [];
+                while ($row = $result->fetch_assoc()) {
+                    $certificates[] = $row;
+                }
+                $stmt->close();
+                return $certificates;
+            }
+            $stmt->close();
+        }
+
         return null;
     }
 

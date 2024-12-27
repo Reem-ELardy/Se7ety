@@ -7,6 +7,11 @@ interface Subject {
     public function registerObserver(Observer $o);
     public function removeObserver(Observer $o);
     public function notifyObserver();
+    public function getId();
+    public function getName();
+    public function getLocationID();
+    public function getDateTime();
+    public function getDescription();
 }
 
 class Event implements Subject {
@@ -17,12 +22,7 @@ class Event implements Subject {
     private string $description;
     private int $no_of_volunteers;
     private int $max_no_of_attendance;
-    
-    /** @var array */
-    private array $assigned_volunteers;
-    
-    /** @var array */
-    private array $registerd_patients;
+
     
     /** @var array */
     private array $observers;
@@ -38,13 +38,7 @@ class Event implements Subject {
         $this->description = $description;
         $this->no_of_volunteers = $no_of_volunteers;
         $this->max_no_of_attendance = $max_no_of_attendance;
-        $this->assigned_volunteers = [];
-        $this->registerd_patients = [];
         $this->observers = [];
-    }
-
-    public function getNumberofPatients(){
-        return count($this->registerd_patients);
     }
 
     public function setId(int $id){
@@ -73,14 +67,6 @@ class Event implements Subject {
 
     public function setMaxNoOfAttendance(int $max_no_of_attendance){
         $this->max_no_of_attendance = $max_no_of_attendance;
-    }
-
-    public function setAssignedVolunteers(array $assigned_volunteers){
-        $this->assigned_volunteers = $assigned_volunteers;
-    }
-
-    public function setAttendedPatients(array $attended_patients) {
-        $this->registerd_patients = $attended_patients;
     }
 
     public function setObservers(array $observers) {
@@ -113,14 +99,6 @@ class Event implements Subject {
 
     public function getMaxNoOfAttendance(){
         return $this->max_no_of_attendance;
-    }
-
-    public function getAssignedVolunteers() {
-        return $this->assigned_volunteers;
-    }
-
-    public function getAttendedPatients() {
-        return $this->registerd_patients;
     }
 
     public function getObservers(){
@@ -162,6 +140,136 @@ class Event implements Subject {
         $certificate->createCertificate($volunteerID, $eventID);
     }
 
+    public function getEventById(int $eventId): ?array {
+        $conn = DBConnection::getInstance()->getConnection();
+        $sql = "SELECT * FROM Event WHERE ID = ? AND IsDeleted = 0";
+        $stmt = $conn->prepare($sql);
+
+        if ($stmt) {
+            $stmt->bind_param('i', $eventId);
+            if ($stmt->execute()) {
+                $result = $stmt->get_result();
+                if ($row = $result->fetch_assoc()) {
+                    $stmt->close();
+                    return $row;
+                }
+            }
+            $stmt->close();
+        }
+
+        return null;
+    }
+
+    public function addPatientToEvent(int $eventId, int $patientId): bool {
+        $conn = DBConnection::getInstance()->getConnection();
+        $sql = "INSERT INTO PatientEvent (EventID, PatientID) VALUES (?, ?)";
+        $stmt = $conn->prepare($sql);
+
+        if ($stmt) {
+            $stmt->bind_param('ii', $eventId, $patientId);
+            $result = $stmt->execute();
+            $stmt->close();
+            return $result;
+        }
+
+        return false;
+    }
+
+
+    public function addVolunteerToEvent(int $eventId, int $volunteerId): bool {
+        $conn = DBConnection::getInstance()->getConnection();
+        $sql = "INSERT INTO VolunteerEvent (EventID, VolunteerID) VALUES (?, ?)";
+        $stmt = $conn->prepare($sql);
+
+        if ($stmt) {
+            $stmt->bind_param('ii', $eventId, $volunteerId);
+            $result = $stmt->execute();
+            $stmt->close();
+            return $result;
+        }
+
+        return false;
+    }
+
+    public function deletePatientFromEvent(int $eventId, int $patientId): bool {
+        $conn = DBConnection::getInstance()->getConnection();
+        $sql = "DELETE FROM PatientEvent WHERE EventID = ? AND PatientID = ?";
+        $stmt = $conn->prepare($sql);
+
+        if ($stmt) {
+            $stmt->bind_param('ii', $eventId, $patientId);
+            $result = $stmt->execute();
+            $stmt->close();
+            return $result;
+        }
+
+        return false;
+    }
+
+
+    public function deleteVolunteerFromEvent(int $eventId, int $volunteerId): bool {
+        $conn = DBConnection::getInstance()->getConnection();
+        $sql = "DELETE FROM VolunteerEvent WHERE EventID = ? AND VolunteerID = ?";
+        $stmt = $conn->prepare($sql);
+
+
+        if ($stmt) {
+            $stmt->bind_param('ii', $eventId, $volunteerId);
+            $result = $stmt->execute();
+            $stmt->close();
+            return $result;
+        }
+
+        return false;
+    }
+
+    public function getPatientIds(int $eventId): ?array {
+        $conn = DBConnection::getInstance()->getConnection();
+        $sql = "SELECT PatientID FROM PatientEvent WHERE EventID = ?";
+        $stmt = $conn->prepare($sql);
+
+        if ($stmt) {
+            $stmt->bind_param('i', $eventId);
+            if ($stmt->execute()) {
+                $result = $stmt->get_result();
+                $patientIds = [];
+                while ($row = $result->fetch_assoc()) {
+                    $patientIds[] = $row['PatientID'];
+                }
+                $stmt->close();
+
+                return $patientIds;
+            }
+            $stmt->close();
+        }
+
+        return null;
+    }
+
+
+    public function getVolunteerIds(int $eventId): ?array {
+        $conn = DBConnection::getInstance()->getConnection();
+        $sql = "SELECT VolunteerID FROM VolunteerEvent WHERE EventID = ?";
+        $stmt = $conn->prepare($sql);
+
+        if ($stmt) {
+            $stmt->bind_param('i', $eventId);
+            if ($stmt->execute()) {
+                $result = $stmt->get_result();
+                $volunteerIds = [];
+                while ($row = $result->fetch_assoc()) {
+                    $volunteerIds[] = $row['VolunteerID'];
+                }
+                $stmt->close();
+
+                return $volunteerIds;
+            }
+            $stmt->close();
+        }
+
+        return null;
+    }
+
     public function createEvent(String $name,  DateTime $date, String $type, int $totalNoPatients, int $totalNoVolunteers, int $locationID) {
         $conn = DBConnection::getInstance()->getConnection();
         
@@ -174,7 +282,7 @@ class Event implements Subject {
         }
         
         $this->name = $name;
-        $this->date_time = $date->format('Y-m-d'); // Format the DateTime object to 'Y-m-d'
+        $this->date_time = $date->format('Y-m-d');
         $this->no_of_volunteers = $totalNoVolunteers;
         $this->locationID = $locationID;
     
@@ -205,6 +313,23 @@ class Event implements Subject {
         return $result;
     }
 
+    public function getNumberofPatients(int $eventId): int {
+        $conn = DBConnection::getInstance()->getConnection();
+        $sql = "SELECT COUNT(*) FROM PatientEvent WHERE EventID = ?";
+        $stmt = $conn->prepare($sql);
+
+        if ($stmt) {
+            $stmt->bind_param('i', $eventId);
+            $stmt->execute();
+            $stmt->bind_result($count);
+            $stmt->fetch();
+            $stmt->close();
+            return $count;
+        }
+
+        return 0; 
+    }
+
     public function readEvent($eventId) {
         $conn = DBConnection::getInstance()->getConnection();
     
@@ -220,7 +345,7 @@ class Event implements Subject {
         $stmt->bind_param("i", $eventId);
         $stmt->execute();
     
-        $stmt->bind_result($this->id, $this->name, $this->date_time, $this->getNumberofPatients(), $this->no_of_volunteers, $this->locationID);
+        $stmt->bind_result($this->id, $this->name, $this->date_time, $this->getNumberofPatients($this->getId()), $this->no_of_volunteers, $this->locationID);
     
         if ($stmt->fetch()) {
             return true;
@@ -245,14 +370,7 @@ class Event implements Subject {
         
         $stmt->bind_param("i", $eventId);
         $result = $stmt->execute();
-        
-        if (!$result) {
-            echo "Execute failed: " . $stmt->error;
-        } else {
-            echo "Event with ID " . $eventId . " marked as deleted.\n";
-        }
-        
-        return $result;
+
     }
     
 }
