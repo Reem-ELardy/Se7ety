@@ -39,22 +39,22 @@ CLass DBConnection
     }
 }
 
-
-/* $servername = "localhost";
-$username = "root";
-$conn = new mysqli($servername, $username);
-$dbname = "Se7ety";
-
-
-if ($conn->connect_error) {
-    die("Connection failed: " . $conn->connect_error);
-} */
-
-//echo "Connected successfully<br/><hr/>";
-
 function run_queries($queries, $echo = false): array
 {
     $conn = DBConnection::getInstance()->getConnection();
+    $ret = [];
+    foreach ($queries as $query) {
+        $ret += [$conn->query($query)];
+        if ($echo) {
+            print($ret[array_key_last($ret)] === TRUE ? "Query ran successfully<br/>" : "Error: " . $conn->error);
+        }
+    }
+    return $ret;
+}
+
+function run_queries_create_DB($queries, $echo = false): array
+{
+    $conn = mysqli_connect("localhost", "root", "", ""); 
     $ret = [];
     foreach ($queries as $query) {
         $ret += [$conn->query($query)];
