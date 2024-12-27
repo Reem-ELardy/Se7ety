@@ -3,7 +3,7 @@ require_once "DB-Connection.php";
 
 $dbname = "Se7ety";
 
-run_queries(
+run_queries_create_DB(
     queries: [
         "DROP DATABASE IF EXISTS $dbname",
 
@@ -96,8 +96,8 @@ run_queries(
             Name VARCHAR(50),
             Type ENUM('Tool', 'Medicine'),
             ExpirationDate DATE,
-            Quantity INT
-            IsDeleted tinyint(1) NOT NULL DEFAULT 0,
+            Quantity INT,
+            IsDeleted tinyint(1) NOT NULL DEFAULT 0
         )",
 
         "CREATE TABLE IF NOT EXISTS $dbname.PatientNeed (
@@ -173,16 +173,16 @@ run_queries(
             FOREIGN KEY (EventID) REFERENCES Event(ID)
         )",
 
-        "CREATE TABLE IF NOT EXISTS Notification (
+        "CREATE TABLE IF NOT EXISTS $dbname.Notification (
             ID INT PRIMARY KEY AUTO_INCREMENT,
             ReceiverID INT NOT NULL,
             Message TEXT NOT NULL,
             Sent TINYINT(1) NOT NULL DEFAULT 0,
             CreatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (ReceiverID) REFERENCES User(ID)
+            FOREIGN KEY (ReceiverID) REFERENCES Person(ID)
         )",
 
-        "CREATE TABLE IF NOT EXISTS EventReminder (
+        "CREATE TABLE IF NOT EXISTS $dbname.EventReminder (
             ID INT PRIMARY KEY AUTO_INCREMENT,
             EventID INT NOT NULL,
             Message TEXT NOT NULL,
