@@ -1,6 +1,6 @@
 <?php
 
-require_once 'PersonFactory.php';
+require_once __DIR__ . '\..\Models\PersonFactory.php';
 require_once __DIR__ . '/../Models/Address-Model.php';
 
 

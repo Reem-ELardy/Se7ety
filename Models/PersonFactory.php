@@ -1,8 +1,8 @@
 <?php
-require_once __DIR__ . '/../Models/Person-Model.php';
-require_once __DIR__ . '/../Models/Volunteer-Model.php';
-require_once __DIR__ . '/../Models/Donor-Model.php';
-require_once __DIR__ . '/../Models/Patient-Model.php';
+require_once 'Person-Model.php';
+require_once 'Volunteer-Model (1).php';
+require_once 'Donor-Model.php';
+require_once 'Patient-Model.php';
 
 class PersonFactory{
    
