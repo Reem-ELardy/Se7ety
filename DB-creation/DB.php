@@ -137,6 +137,22 @@ run_queries(
             FOREIGN KEY (LocationID) REFERENCES Address(ID)
         )",
 
+        "CREATE TABLE IF NOT EXISTS $dbname.VolunteerEvent (
+            EventID INT,
+            VolunteerID INT,
+            PRIMARY KEY (EventID, VolunteerID),
+            FOREIGN KEY (EventID) REFERENCES Event(ID),
+            FOREIGN KEY (VolunteerID) REFERENCES Volunteer(ID)
+        )",
+
+        "CREATE TABLE IF NOT EXISTS $dbname.PatientEvent (
+            EventID INT,
+            PatientID INT,
+            PRIMARY KEY (EventID, PatientID),
+            FOREIGN KEY (EventID) REFERENCES Event(ID),
+            FOREIGN KEY (PatientID) REFERENCES Patient(ID)
+        )",
+
         "CREATE TABLE IF NOT EXISTS $dbname.EventParticipation (
             ID INT PRIMARY KEY AUTO_INCREMENT,
             VolunteerID INT,
@@ -156,6 +172,25 @@ run_queries(
             FOREIGN KEY (VolunteerID) REFERENCES Volunteer(ID),
             FOREIGN KEY (EventID) REFERENCES Event(ID)
         )",
+
+        "CREATE TABLE IF NOT EXISTS Notification (
+            ID INT PRIMARY KEY AUTO_INCREMENT,
+            ReceiverID INT NOT NULL,
+            Message TEXT NOT NULL,
+            Sent TINYINT(1) NOT NULL DEFAULT 0,
+            CreatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (ReceiverID) REFERENCES User(ID)
+        )",
+
+        "CREATE TABLE IF NOT EXISTS EventReminder (
+            ID INT PRIMARY KEY AUTO_INCREMENT,
+            EventID INT NOT NULL,
+            Message TEXT NOT NULL,
+            ReminderDate DATETIME NOT NULL,
+            IsDeleted TINYINT(1) NOT NULL DEFAULT 0,
+            FOREIGN KEY (EventID) REFERENCES Event(ID)
+        )",
+        
 
         "CREATE TABLE IF NOT EXISTS $dbname.Ticket (
             ID INT PRIMARY KEY AUTO_INCREMENT,
