@@ -78,6 +78,7 @@ run_queries_create_DB(
             DonorID INT,
             Date DATE,
             Time TIME,
+            Status ENUM('Pending', 'Done'),
             IsDeleted tinyint(1) NOT NULL DEFAULT 0,
             FOREIGN KEY (DonorID) REFERENCES Donor(ID) ON DELETE CASCADE
         )",
