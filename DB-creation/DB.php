@@ -86,7 +86,7 @@ run_queries_create_DB(
         "CREATE TABLE IF NOT EXISTS $dbname.Donation (
             ID INT PRIMARY KEY AUTO_INCREMENT,
             DonateID INT,
-            Type ENUM('Medical', 'Cash'),
+            Type ENUM('Medical', 'Money'),
             CashAmount DECIMAL(10, 2),
             IsDeleted tinyint(1) NOT NULL DEFAULT 0,
             FOREIGN KEY (DonateID) REFERENCES Donate(ID)
@@ -96,7 +96,6 @@ run_queries_create_DB(
             ID INT PRIMARY KEY AUTO_INCREMENT,
             Name VARCHAR(50),
             Type ENUM('Tool', 'Medicine'),
-            ExpirationDate DATE,
             Quantity INT,
             IsDeleted tinyint(1) NOT NULL DEFAULT 0
         )",
