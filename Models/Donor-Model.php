@@ -1,4 +1,5 @@
 <?php
+require_once 'Person-Model.php';
 class Donor extends Person {
     protected $id;
     protected $personId;

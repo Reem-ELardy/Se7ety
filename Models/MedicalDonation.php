@@ -1,77 +1,207 @@
 <?php
 require_once 'Donation.php';
+
 class MedicalDonation extends Donation {
+    /**
+     * @var array A map of MedicalID to its corresponding quantity
+     */
     private array $medicalItems = [];
 
     public function __construct(IDonationMethodStrategy $donationMethod) {
-        // Call the parent constructor, passing the donation method and DonationType::Medical
         parent::__construct($donationMethod, DonationType::Medical);
     }
 
-    // Method to add medical items to the donation
+    /**
+     *
+     * @param Medical $medical The medical item to add
+     * @param int $quantity The quantity to add
+     */
     public function addToMedicalItems(Medical $medical, int $quantity): void {
-        $this->medicalItems[$medical->getName()] = [
-            'medical' => $medical,
-            'quantity' => $quantity
-        ];
+        $medicalId = $medical->getId();
+
+        if (isset($this->medicalItems[$medicalId])) {
+            $this->medicalItems[$medicalId]['quantity'] += $quantity;
+        } else {
+            // Add a new medical item
+            $this->medicalItems[$medicalId] = [
+                'medical' => $medical,
+                'quantity' => $quantity,
+            ];
+        }
     }
 
-    // Optional: Get the medical items added to the donation
+    /**
+     * Get all medical items as a map.
+     * @return array
+     */
     public function getMedicalItems(): array {
         return $this->medicalItems;
     }
-
-    // CRUD Operations
-
-    // Create a new Medical Donation record
-    public function createMedicalDonation(): bool {
-        $conn = DBConnection::getInstance()->getConnection();
-        
-        // Start a transaction to ensure consistency
-        $conn->begin_transaction();
-    
-        try {
-            // Insert the donation itself into the DONATIONMEDICAL table
-            $query = "INSERT INTO DONATIONMEDICAL (MedicalID, Quantity) VALUES (?, ?)";
-            $stmt = $conn->prepare($query);
-            if (!$stmt) {
-                throw new Exception("Prepare failed: " . $conn->error);
+    public function setMedicalItems(array $medicalItems): void {
+        foreach ($medicalItems as $item) {
+            if (!is_array($item) || !isset($item['medical']) || !isset($item['quantity'])) {
+                throw new Exception("Invalid medical item format. Each item must be an array with 'medical' and 'quantity' keys.");
             }
     
-            // Insert each medical item associated with this donation
+            $medical = $item['medical'];
+            $quantity = $item['quantity'];
+    
+            if (!$medical instanceof Medical) {
+                throw new Exception("Invalid medical item. Must be an instance of the Medical class.");
+            }
+    
+            if (!is_int($quantity) || $quantity <= 0) {
+                throw new Exception("Invalid quantity. Must be a positive integer.");
+            }
+    
+            $this->medicalItems[] = [
+                'medical' => $medical,
+                'quantity' => $quantity,
+            ];
+        }
+    }
+    
+    
+    /**
+     * Create a new Medical Donation record.
+     * @return bool to make sure wether the operation was successfull or not
+     */
+    public function createMedicalDonation(): bool {
+        $conn = DBConnection::getInstance()->getConnection();
+    
+        try {
+            // Start a transaction to ensure atomicity
+            $conn->begin_transaction();
+    
             foreach ($this->medicalItems as $item) {
                 $medical = $item['medical'];
                 $quantity = $item['quantity'];
     
-                // Assume $medical->getId() gets the medical ID
-                $stmt->bind_param("ii", $medicalId, $quantity);
-                $result = $stmt->execute();
-                if (!$result) {
-                    throw new Exception("Execute failed: " . $stmt->error);
+                // Ensure medical item is an instance of Medical
+                if (!$medical instanceof Medical) {
+                    throw new Exception("Invalid medical item. Must be an instance of the Medical class.");
                 }
+    
+                // Step 1: Check if the medical item exists in the Medical table
+                $checkMedicalQuery = "SELECT ID, Quantity FROM Medical WHERE Name = ? AND Type = ?";
+                $checkMedicalStmt = $conn->prepare($checkMedicalQuery);
+    
+                if (!$checkMedicalStmt) {
+                    throw new Exception("Prepare failed: " . $conn->error);
+                }
+    
+                $name = $medical->getName();
+                $type = $medical->getType()->value;
+                $checkMedicalStmt->bind_param("ss", $name, $type);
+                $checkMedicalStmt->execute();
+                $checkMedicalResult = $checkMedicalStmt->get_result();
+    
+                if ($checkMedicalResult->num_rows > 0) {
+                    // Medical item exists, update quantity in the Medical table
+                    $existingRow = $checkMedicalResult->fetch_assoc();
+                    $medicalId = (int) $existingRow['ID'];
+                    $newQuantity = (int) $existingRow['Quantity'] + $quantity;
+    
+                    // Update the quantity in the Medical table
+                    $updateMedicalQuery = "UPDATE Medical SET Quantity = ? WHERE ID = ?";
+                    $updateMedicalStmt = $conn->prepare($updateMedicalQuery);
+    
+                    if (!$updateMedicalStmt) {
+                        throw new Exception("Prepare failed: " . $conn->error);
+                    }
+    
+                    $updateMedicalStmt->bind_param("ii", $newQuantity, $medicalId);
+                    if (!$updateMedicalStmt->execute()) {
+                        throw new Exception("Execute failed for Medical update: " . $updateMedicalStmt->error);
+                    }
+    
+                    $updateMedicalStmt->close();
+                } else {
+                    // Medical item does not exist, insert into Medical table
+                    $medical->createMedical();
+                    $medicalId = $medical->getId(); // Get the ID of the newly inserted medical item
+                }
+    
+                // Close the checkMedicalStmt
+                $checkMedicalStmt->close();
+    
+                // Step 2: Check if the medical item already exists in the DonationMedical table
+                $checkDonationMedicalQuery = "SELECT Quantity FROM DonationMedical WHERE MedicalID = ? AND DonationID = ?";
+                $checkDonationMedicalStmt = $conn->prepare($checkDonationMedicalQuery);
+    
+                if (!$checkDonationMedicalStmt) {
+                    throw new Exception("Prepare failed: " . $conn->error);
+                }
+    
+                $donationId = $this->getId(); // Get the donation ID from the donation object
+                $checkDonationMedicalStmt->bind_param("ii", $medicalId, $donationId);
+                $checkDonationMedicalStmt->execute();
+                $checkDonationMedicalResult = $checkDonationMedicalStmt->get_result();
+    
+                if ($checkDonationMedicalResult->num_rows > 0) {
+                    // If the medical item already exists in DonationMedical, update the quantity
+                    $existingDonationRow = $checkDonationMedicalResult->fetch_assoc();
+                    $newDonationQuantity = (int) $existingDonationRow['Quantity'] + $quantity;
+    
+                    // Update the quantity in the DonationMedical table
+                    $updateDonationMedicalQuery = "UPDATE DonationMedical SET Quantity = ? WHERE MedicalID = ? AND DonationID = ?";
+                    $updateDonationMedicalStmt = $conn->prepare($updateDonationMedicalQuery);
+    
+                    if (!$updateDonationMedicalStmt) {
+                        throw new Exception("Prepare failed: " . $conn->error);
+                    }
+    
+                    $updateDonationMedicalStmt->bind_param("iii", $newDonationQuantity, $medicalId, $donationId);
+                    if (!$updateDonationMedicalStmt->execute()) {
+                        throw new Exception("Execute failed for DonationMedical update: " . $updateDonationMedicalStmt->error);
+                    }
+    
+                    $updateDonationMedicalStmt->close();
+                } else {
+                    // If the medical item doesn't exist in DonationMedical, insert it
+                    $insertDonationMedicalQuery = "INSERT INTO DonationMedical (MedicalID, DonationID, Quantity, IsDeleted) VALUES (?, ?, ?, 0)";
+                    $insertDonationMedicalStmt = $conn->prepare($insertDonationMedicalQuery);
+    
+                    if (!$insertDonationMedicalStmt) {
+                        throw new Exception("Prepare failed: " . $conn->error);
+                    }
+    
+                    $insertDonationMedicalStmt->bind_param("iii", $medicalId, $donationId, $quantity);
+                    if (!$insertDonationMedicalStmt->execute()) {
+                        throw new Exception("Execute failed for DonationMedical insert: " . $insertDonationMedicalStmt->error);
+                    }
+    
+                    $insertDonationMedicalStmt->close();
+                }
+    
+                // Close the checkDonationMedicalStmt
+                $checkDonationMedicalStmt->close();
             }
     
-            // Commit the transaction if everything goes well
+            // Commit all changes
             $conn->commit();
             return true;
         } catch (Exception $e) {
-            // Rollback the transaction if any error occurs
+            // Rollback in case of an error
             $conn->rollback();
-            throw new Exception("Error occurred: " . $e->getMessage());
-        } finally {
-            if (isset($stmt)) {
-                $stmt->close();
-            }
+            throw $e;
         }
     }
     
+    
+    
+    
 
-    // Read a Medical Donation by ID
+    /**
+     * Read a Medical Donation by ID.
+     *
+     * @param int $donationId The DonationID to fetch
+     * @return MedicalDonation|null The MedicalDonation object, or null if not found
+     */
     public static function readMedicalDonation(int $donationId): ?MedicalDonation {
         $conn = DBConnection::getInstance()->getConnection();
 
-        // Fetch the Medical Donation details
-        $query = "SELECT * FROM DONATIONMEDICAL WHERE DonationID = ?";
+        $query = "SELECT MedicalID, Quantity FROM DonationMedical WHERE DonationID = ?";
         $stmt = $conn->prepare($query);
         if (!$stmt) {
             throw new Exception("Prepare failed: " . $conn->error);
@@ -79,36 +209,17 @@ class MedicalDonation extends Donation {
 
         $stmt->bind_param("i", $donationId);
         $stmt->execute();
-
         $result = $stmt->get_result();
-        if ($row = $result->fetch_assoc()) {
-            // Fetch medical items related to this donation
-            $queryItems = "SELECT * FROM DONATIONMEDICAL WHERE DonationID = ?";
-            $stmtItems = $conn->prepare($queryItems);
-            if (!$stmtItems) {
-                throw new Exception("Prepare failed: " . $conn->error);
+
+        if ($result->num_rows > 0) {
+            $medicalDonation = new MedicalDonation(new InKindDonation());
+            $medicalDonation->setId($donationId);
+
+            while ($row = $result->fetch_assoc()) {
+                $medical = Medical::readMedical($row['MedicalID']); // Fetch Medical object by ID
+                $medicalDonation->addToMedicalItems($medical, $row['Quantity']);
             }
 
-            $stmtItems->bind_param("i", $donationId);
-            $stmtItems->execute();
-            $resultItems = $stmtItems->get_result();
-
-            $medicalItems = [];
-            while ($itemRow = $resultItems->fetch_assoc()) {
-                $medical = new Medical(
-                    $itemRow['MedicalName'],
-                    MedicalType::from($itemRow['Type']), // Assuming `MedicalType::from` method exists
-                    new DateTime($itemRow['ExpirationDate']),
-                    $itemRow['Quantity']
-                );
-                $medicalItems[$medical->getName()] = [
-                    'medical' => $medical,
-                    'quantity' => $itemRow['Quantity']
-                ];
-            }
-
-            $medicalDonation = new MedicalDonation(new InKindDonation()); // Assuming InKindDonation is your strategy
-            $medicalDonation->medicalItems = $medicalItems;
             return $medicalDonation;
         }
 
@@ -116,89 +227,89 @@ class MedicalDonation extends Donation {
         return null;
     }
 
-    public function updateMedicalDonation(int $donationId): bool {
+    /**
+     * Update a Medical Donation.
+     *
+     * @return bool Whether the operation was successful
+     */
+    public function updateMedicalDonation(): bool {
         $conn = DBConnection::getInstance()->getConnection();
-        
-        // Start a transaction to ensure consistency
+
         $conn->begin_transaction();
-    
         try {
-            // Step 1: Update the quantity of medical items in the DONATIONMEDICALItems table
-            foreach ($this->medicalItems as $item) {
-                $medical = $item['medical'];
+            foreach ($this->medicalItems as $medicalId => $item) {
                 $quantity = $item['quantity'];
-    
-                // Update the quantity for each medical item
-                $queryUpdate = "UPDATE DONATIONMEDICAL SET Quantity = ? WHERE DonationID = ? AND MedicalID = ?";
-                $stmtUpdate = $conn->prepare($queryUpdate);
-                if (!$stmtUpdate) {
-                    throw new Exception("Prepare failed for updating medical item quantity: " . $conn->error);
+
+                $query = "UPDATE DonationMedical SET Quantity = ? WHERE DonationID = ? AND MedicalID = ?";
+                $stmt = $conn->prepare($query);
+                if (!$stmt) {
+                    throw new Exception("Prepare failed: " . $conn->error);
                 }
-    
-                // Bind the parameters: Quantity, DonationID, MedicalID
-                $stmtUpdate->bind_param("iii", $quantity, $donationId, $medicalId);
-                $result = $stmtUpdate->execute();
+
+                $donationId = $this->getId();
+                $stmt->bind_param("iii", $quantity, $donationId, $medicalId);
+                $result = $stmt->execute();
                 if (!$result) {
-                    throw new Exception("Execute failed for updating medical item quantity: " . $stmtUpdate->error);
+                    throw new Exception("Execute failed: " . $stmt->error);
                 }
+                $stmt->close();
             }
-    
-            // Commit the transaction if everything goes well
+
             $conn->commit();
             return true;
         } catch (Exception $e) {
-            // Rollback if any error occurs
             $conn->rollback();
-            throw new Exception("Error occurred: " . $e->getMessage());
-        } finally {
-            // Close the prepared statement to avoid memory leaks
-            if (isset($stmtUpdate)) {
-                $stmtUpdate->close();
+            throw $e;
+        }
+    }
+    /**
+     * Delete a Medical Donation.
+     *
+     * @return bool Whether the operation was successful
+     */
+    public function deleteMedicalDonation(): bool {
+        $conn = DBConnection::getInstance()->getConnection();
+    
+        $conn->begin_transaction(); // Start a transaction
+        try {
+            // Step 1: Soft delete associated records from the DonationMedical table
+            $queryUpdateItems = "UPDATE DonationMedical SET IsDeleted = 1 WHERE DonationID = ?";
+            $stmtUpdateItems = $conn->prepare($queryUpdateItems);
+            if (!$stmtUpdateItems) {
+                throw new Exception("Prepare failed: " . $conn->error);
             }
+    
+            $donationId = $this->getId();
+            $stmtUpdateItems->bind_param("i", $donationId);
+            $resultItems = $stmtUpdateItems->execute();
+            if (!$resultItems) {
+                throw new Exception("Execute failed: " . $stmtUpdateItems->error);
+            }
+            $stmtUpdateItems->close();
+    
+            // Step 2: Soft delete the donation record itself in the Donation table
+            $queryUpdateDonation = "UPDATE Donation SET IsDeleted = 1 WHERE ID = ?";
+            $stmtUpdateDonation = $conn->prepare($queryUpdateDonation);
+            if (!$stmtUpdateDonation) {
+                throw new Exception("Prepare failed: " . $conn->error);
+            }
+    
+            $stmtUpdateDonation->bind_param("i", $donationId);
+            $resultDonation = $stmtUpdateDonation->execute();
+            if (!$resultDonation) {
+                throw new Exception("Execute failed: " . $stmtUpdateDonation->error);
+            }
+            $stmtUpdateDonation->close();
+    
+            $conn->commit(); // Commit the transaction
+            return true;
+    
+        } catch (Exception $e) {
+            $conn->rollback(); // Rollback if there is an error
+            throw $e;
         }
     }
     
-    
-// Delete a Medical Donation
-public function deleteMedicalDonation(int $donationId): bool {
-    $conn = DBConnection::getInstance()->getConnection();
-
-    // Start a transaction to ensure consistency
-    $conn->begin_transaction();
-
-    try {
-        // Step 1: Delete the medical items for this donation
-        $queryDeleteItems = "DELETE FROM DONATIONMEDICAL WHERE DonationID = ?";
-        $stmtDeleteItems = $conn->prepare($queryDeleteItems);
-        if (!$stmtDeleteItems) {
-            throw new Exception("Prepare failed: " . $conn->error);
-        }
-
-        $stmtDeleteItems->bind_param("i", $donationId);
-        $stmtDeleteItems->execute();
-
-        // Step 2: Now delete the donation record itself
-        $queryDelete = "DELETE FROM DONATIONMEDICAL WHERE DonationID = ?";
-        $stmtDelete = $conn->prepare($queryDelete);
-        if (!$stmtDelete) {
-            throw new Exception("Prepare failed: " . $conn->error);
-        }
-
-        $stmtDelete->bind_param("i", $donationId);
-        $result = $stmtDelete->execute();
-
-        // Commit the transaction if everything goes well
-        $conn->commit();
-        return $result;
-    } catch (Exception $e) {
-        // Rollback if any error occurs
-        $conn->rollback();
-        throw new Exception("Error occurred: " . $e->getMessage());
-    } 
-        $stmtDeleteItems->close();
-        $stmtDelete->close();
-    
 }
 
-}
 ?>
