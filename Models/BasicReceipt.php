@@ -3,41 +3,76 @@
 require_once 'Receipt.php';
 
 class BasicReceipt extends Receipt {
-    private $donor_name;
-    private $donation_date;
+    private string $donor_name;
+    private DateTime $donation_date;
     private Donate $donate;
 
-    public function __construct($donor_name, DateTime $donation_date,Donate $donate) {
+    /**
+     * Constructor to initialize BasicReceipt.
+     * 
+     * @param string $donor_name Name of the donor.
+     * @param DateTime $donation_date Date of the donation.
+     * @param Donate $donate The associated Donate object.
+     */
+    public function __construct(string $donor_name, DateTime $donation_date, Donate $donate) {
+        parent::__construct($donate->getId()); // Assuming Donate class has a getId() method
         $this->donor_name = $donor_name;
         $this->donation_date = $donation_date;
         $this->donate = $donate;
     }
 
-    public function getDonorName() {
+    /**
+     * Get the donor's name.
+     * 
+     * @return string
+     */
+    public function getDonorName(): string {
         return $this->donor_name;
     }
 
-
-    public function setDonorName(string $donor_name) {
+    /**
+     * Set the donor's name.
+     * 
+     * @param string $donor_name
+     */
+    public function setDonorName(string $donor_name): void {
         $this->donor_name = $donor_name;
     }
 
- 
-    public function getDonationDate() {
+    /**
+     * Get the donation date.
+     * 
+     * @return DateTime
+     */
+    public function getDonationDate(): DateTime {
         return $this->donation_date;
     }
 
-    public function setDonationDate(DateTime $donation_date) {
+    /**
+     * Set the donation date.
+     * 
+     * @param DateTime $donation_date
+     */
+    public function setDonationDate(DateTime $donation_date): void {
         $this->donation_date = $donation_date;
     }
 
-     public function generate_receipt(): string {
+    /**
+     * Generate a receipt string with donor details.
+     * 
+     * @return string
+     */
+    public function generate_receipt(): string {
         return "Donor: {$this->donor_name}\nDate: {$this->donation_date->format('Y-m-d')}";
     }
 
+    /**
+     * Calculate the total donation amount.
+     * 
+     * @return float
+     */
     public function total_donation(): float {
-        return 10.0; 
+        // Assuming the Donate class has a method to get the donation amount
+        return $this->donate->getAmount();
     }
 }
-
-    

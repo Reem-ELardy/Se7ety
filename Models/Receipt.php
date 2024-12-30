@@ -21,6 +21,7 @@ abstract class Receipt {
     public function setDonateId(int $donateId): void {
         $this->donateId = $donateId;
     }
+
     
     abstract public function generate_receipt();
     abstract public function total_donation();
@@ -49,7 +50,6 @@ abstract class Receipt {
         return $result;
     }
 
-
     public static function readReceipt(int $id): ?Receipt {
         $conn = DBConnection::getInstance()->getConnection();
 
@@ -74,7 +74,6 @@ abstract class Receipt {
         $stmt->close();
         return null;
     }
-
  
     public function updateReceipt(): bool {
         if (!$this->id) {
