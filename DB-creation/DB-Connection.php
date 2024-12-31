@@ -1,6 +1,7 @@
 <?php
+require_once __DIR__ . '/IDatabase.php';
 
-CLass DBConnection
+class DBConnection implements IDatabase 
 {
     private static $instance;
     private $connection;
@@ -22,21 +23,80 @@ CLass DBConnection
         return self::$instance;
     }
 
-    private function database_connect($database_host, $database_username, $database_password,$db_name) {
-        if ($connection = mysqli_connect($database_host, $database_username, $database_password,$db_name)) {
-        
-                
+    private function database_connect($database_host, $database_username, $database_password, $db_name) {
+        $connection = mysqli_connect($database_host, $database_username, $database_password, $db_name);
+        if ($connection) {
             return $connection;
-            
         } else {
-                die("Database connection error");
-            
+            die("Database connection error");
         }
     }
-    
+
     public function getConnection() {
         return $this->connection;
     }
+
+    public function run_query(string $query): mysqli_result|bool
+    {
+        return $this->connection->query($query);
+    }
+
+    public function prepare(string $query, array $params): mysqli_stmt|bool
+    {
+        $stmt = $this->connection->prepare($query);
+        if (!$stmt) {
+            throw new Exception("Failed to prepare statement: " . $this->connection->error . "\nQuery: " . $query);
+        }
+
+        // Bind parameters if any
+        if (!empty($params)) {
+            $types = $this->getParamTypes($params);
+            if ($stmt->bind_param($types, ...$params) === false) {
+                throw new Exception("Failed to bind parameters: " . $this->connection->error);
+            }
+        }
+        // Execute the statement
+        if ($stmt->execute() === false) {
+            throw new Exception("Failed to execute statement: " . $this->connection->error);
+        }
+        return $stmt;
+    }
+
+    private function getParamTypes(array $params): string
+    {
+        $types = '';
+        foreach ($params as $param) {
+            if (is_int($param)) {
+                $types .= 'i'; 
+            } elseif (is_float($param)) {
+                $types .= 'd'; 
+            } elseif (is_string($param)) {
+                $types .= 's'; 
+            } elseif (is_null($param)) {
+                $types .= 's'; // Treat NULL as a string
+            } else {
+                throw new Exception("Unsupported parameter type");
+            }
+        }
+        return $types;
+    }
+
+    public function getInsertId() {
+        return $this->connection->insert_id;
+    }
+}
+
+function run_queries_create_DB($queries, $echo = false): array
+{
+    $conn = DBConnection::getInstance()->getConnection(); // Use DBConnection instance
+    $ret = [];
+    foreach ($queries as $query) {
+        $ret[] = $conn->query($query); // Append result
+        if ($echo) {
+            print($ret[array_key_last($ret)] === TRUE ? "Query ran successfully<br/>" : "Error: " . $conn->error);
+        }
+    }
+    return $ret;
 }
 
 function run_queries($queries, $echo = false): array
@@ -52,40 +112,5 @@ function run_queries($queries, $echo = false): array
     return $ret;
 }
 
-function run_queries_create_DB($queries, $echo = false): array
-{
-    $conn = mysqli_connect("localhost", "root", "", ""); 
-    $ret = [];
-    foreach ($queries as $query) {
-        $ret += [$conn->query($query)];
-        if ($echo) {
-            print($ret[array_key_last($ret)] === TRUE ? "Query ran successfully<br/>" : "Error: " . $conn->error);
-        }
-    }
-    return $ret;
-}
 
-function run_query($query, $echo = false): bool
-{
-    return run_queries([$query], $echo)[0];
-}
-
-function run_select_query($query, $echo = false): mysqli_result|bool
-{
-    $conn = DBConnection::getInstance()->getConnection();
-    $result = $conn->query($query);
-    /* if ($echo) {
-        echo '<pre>' . $query . '</pre>';
-        if ($result->num_rows > 0) {
-            while ($row = $result->fetch_assoc())
-                echo $row;
-        } else {
-            echo "0 results";
-        }
-        echo "<hr/>";
-    } */
-    return $result;
-}
-
-// $conn->close();
 ?>
