@@ -1,4 +1,5 @@
 <?php
+require_once __DIR__ . '/IDatabase.php';
 require_once "DB-Connection.php";
 
 $dbname = "Se7ety";
