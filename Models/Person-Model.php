@@ -1,4 +1,8 @@
 <?php
+require_once __DIR__ . '/../DB-creation/IDatabase.php';
+require_once __DIR__ . '/../DB-creation/DBProxy.php';
+
+
 abstract class Person {
     protected $id;
     protected $name;
@@ -7,6 +11,8 @@ abstract class Person {
     protected $email;
     protected $addressId;
     protected $IsDeleted;
+    private $dbProxy;
+
 
     public function __construct($id = null, $name = "", $age = 0, $password = "", $email = "", $addressId = null,$IsDeleted=0) {
         $this->id = $id;
@@ -16,6 +22,8 @@ abstract class Person {
         $this->email = $email;
         $this->addressId = $addressId;
         $this->IsDeleted = $IsDeleted;
+        $this->dbProxy = new DBProxy($name);
+
     }
 
     public function getId() {
@@ -70,38 +78,38 @@ abstract class Person {
         $this->IsDeleted = $IsDeleted;
     }
     public function getIsDeleted($IsDeleted) {
-        return $this->IsDeleted;    }
-    
-        // Create associated Person record
-        public function createPerson() {
-            $conn = DBConnection::getInstance()->getConnection();
-    
-            if ($this->id !== null) {
-                return false;
-            }
-    
-            $query = "INSERT INTO Person (Name, Age, Password, Email, AddressID) VALUES (?, ?, ?, ?, ?)";
-            $stmt = $conn->prepare($query);
-            if (!$stmt) {
-                return false;
-            }
-    
-            // Accessing parent class properties with parent::
-            $stmt->bind_param("sisss", $this->name, $this->age, $this->password, $this->email, $this->addressId);
-            $result = $stmt->execute();
-            if (!$result) {
-                echo "Execute failed: " . $stmt->error;
-            } else {
-                // After person is created, set the ID and personId
-                $this->id = $conn->insert_id; // Set the ID to the newly created ID
-                
-            }
-            return $result;
+        return $this->IsDeleted;    
+    }
+
+    public function updatePerson(array $param) {
+        $query = "UPDATE Person SET Name = ?, Age = ?, Password = ?, Email = ?, AddressID = ? WHERE ID = ?";
+        $stmt = $this->dbProxy->prepare($query, $param);
+        if (!$stmt) {
+            return false;
         }
+        return true;
+    }
+    
+    // Create associated Person record
+    public function createPerson() {
+        if ($this->id !== null) {
+            return false;
+        }
+    
+        $query = "INSERT INTO Person (Name, Age, Password, Email, AddressID) VALUES (?, ?, ?, ?, ?)";
+        $stmt = $this->dbProxy->prepare($query, [$this->name, $this->age, $this->password, $this->email, $this->addressId]);
+    
+        if (!$stmt) {
+            return false;
+        }
+    
+        // Assuming DBProxy handles execution and returns the inserted ID
+        $this->id = $this->dbProxy->getInsertId();  // Example method to get inserted ID
+        return $this->id;
+    }
+    
     abstract public function login($email, $enteredPassword);
     //abstract public function signup($name, $age, $password, $email, $addressId);
     abstract public function signup($name, $age, $password, $email);
-
-        
 }
 ?>
