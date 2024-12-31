@@ -1,13 +1,19 @@
 <?php
+require_once __DIR__ . '/../DB-creation/IDatabase.php';
+require_once __DIR__ . '/../DB-creation/DBProxy.php';
 require_once 'Person-Model.php';
+
 class Donor extends Person {
     protected $id;
     protected $personId;
+    private $dbProxy;
 
     public function __construct($id = null, $personId = null, $name = "", $age = 0, $password = "", $email = "", $addressId = null, $IsDeleted = false) {
         // Initialize the parent class (Person)
         parent::__construct($id, $name, $age, $password, $email, $addressId, $IsDeleted);
         $this->personId = $personId;
+        // Initialize the DBProxy with the username
+        $this->dbProxy = new DBProxy($name);
     }
 
     // Getters
@@ -21,118 +27,90 @@ class Donor extends Person {
     }
 
     public function createDonor() {
-        $conn = DBConnection::getInstance()->getConnection();
         if ($this->id === null) {
-            $personCreated = $this->createPerson();
-            if (!$personCreated) {
+            $personId = $this->createPerson(); // Get the Person ID
+            if (!$personId) {
                 return false;
             }
+            $this->personId = $personId;  // Assign the returned Person ID
         }
-
+    
         $query = "INSERT INTO Donor (PersonID) VALUES (?)";
-        $stmt = $conn->prepare($query);
+        $stmt = $this->dbProxy->prepare($query, [$this->personId]);
         if (!$stmt) {
             return false;
         }
-
-        $stmt->bind_param("i", $this->id);
-        $result = $stmt->execute();
-        if ($result) {
-            $this->personId = $this->id;
-            $this->id = $conn->insert_id;
-        }
-        return $result;
+    
+        $this->id = $this->dbProxy->getInsertId(); // Get the Donor ID
+    
+        return true;
     }
 
-
     public function login($email, $enteredPassword) {
-        $conn = DBConnection::getInstance()->getConnection();
         $email = trim($email);
+
         $query = "SELECT Person.ID as PersonID, Person.Name, Person.Age, Person.Password, Person.Email, Person.AddressID, Donor.ID as DonorID
                   FROM Donor 
                   INNER JOIN Person ON Donor.PersonID = Person.ID 
-                  WHERE Person.Email = ?
+                  WHERE Person.Email = ? 
                   ORDER BY Person.ID DESC
                   LIMIT 1";
-                  
-        $stmt = $conn->prepare($query);
+
+        $stmt = $this->dbProxy->prepare($query, [$email]); // Prepare statement using DBProxy
         if (!$stmt) {
             return false;
         }
 
-        $stmt->bind_param("s", $email);
-        if (!$stmt->execute()) {
-            return false;
-        }
-
+        // Bind the result variables
         $stmt->bind_result($this->personId, $this->name, $this->age, $this->password, $this->email, $this->addressId, $this->id);
+        
+        // Fetch and validate login
         if ($stmt->fetch() && $enteredPassword === $this->password) {
             return true;
         }
         return false;
     }
-    
-    
-    //public function signup($name, $age, $password, $email, $addressId)
+
     public function signup($name, $age, $password, $email) {
         // Input validation (you can expand this to include more robust checks)
         if (empty($name) || empty($age) || empty($password) || empty($email)) {
             return false;
         }
-        $IsPersonExist= $this-> findByEmail($email);
+
+        // Check if the email already exists
+        $IsPersonExist = $this->findByEmail($email);
         if ($IsPersonExist) {
             return false;
-        }
-        else {
-                    // Set class properties
+        } else {
+            // Set class properties
             $this->name = $name;
             $this->age = $age;
             $this->password = $password;
             $this->email = $email;
-        
-            // Use the createPerson method to add the new user to the database
+
+            // Use the createDonor method to add the new user to the database
             $result = $this->createDonor();
-        
+
             if ($result) {
                 return true;
             } else {
                 return false;
             }
         }
-    
-
     }
-    
 
     // Update Donor record
     public function updateDonor() {
-        $conn = DBConnection::getInstance()->getConnection();
-
         // Update the Person record (related to the donor)
-        $query = "UPDATE Person SET Name = ?, Age = ?, Password = ?, Email = ?, AddressID = ? WHERE ID = ?";
-        $stmt = $conn->prepare($query);
-        if (!$stmt) {
-            return false;
-        }
+        $personUpdated = $this->updatePerson([$this->name, $this->age, $this->password, $this->email, $this->addressId, $this->personId]);
 
-        // Bind parameters and execute the update for the person data
-        $stmt->bind_param("sisssi", $this->name, $this->age, $this->password, $this->email, $this->addressId, $this->personId);
-        $result = $stmt->execute();
-        if (!$result) {
-            return false;
+        if (!$personUpdated) {
+            return false;  // Person update failed
         }
-
         // Update Donor record if needed (optional, can update other fields in the Donor table)
         $query = "UPDATE Donor SET PersonID = ? WHERE ID = ?";
-        $stmt = $conn->prepare($query);
+        $stmt = $this->dbProxy->prepare($query, [$this->personId, $this->id]);
         if (!$stmt) {
-            return false;
-        }
-
-        // Bind parameters and execute the update for the donor data
-        $stmt->bind_param("ii", $this->personId, $this->id);
-        $result = $stmt->execute();
-        if (!$result) {
             return false;
         }
 
@@ -140,26 +118,20 @@ class Donor extends Person {
     }
 
     public function readDonor($donorId) {
-        $conn = DBConnection::getInstance()->getConnection();
-
         // First, load the donor's details based on their ID
         $query = "SELECT Person.ID as PersonID, Person.Name, Person.Age, Person.Password, Person.Email, Person.AddressID, Donor.ID as DonorID
                   FROM Donor 
                   INNER JOIN Person ON Donor.PersonID = Person.ID 
                   WHERE Donor.ID = ?";
-        
-        $stmt = $conn->prepare($query);
+
+        $stmt = $this->dbProxy->prepare($query, [$donorId]); // Prepare statement using DBProxy
         if (!$stmt) {
             return false;
         }
-    
-        // Bind the donor ID to the query
-        $stmt->bind_param("i", $donorId);
-        $stmt->execute();
-    
+
         // Bind the result to class properties
         $stmt->bind_result($this->personId, $this->name, $this->age, $this->password, $this->email, $this->addressId, $this->id);
-    
+
         // Fetch the result
         if ($stmt->fetch()) {
             // Successfully loaded the donor data
@@ -171,68 +143,42 @@ class Donor extends Person {
     }
 
     public function delete($donorId) {
-        $conn = DBConnection::getInstance()->getConnection();
-
         if ($donorId === null) {
             return false;
         }
 
+        // Delete (mark as deleted) the donor record
         $query = "UPDATE Person SET IsDeleted = true WHERE ID = ?";
-        $stmt = $conn->prepare($query);
-        
+        $stmt = $this->dbProxy->prepare($query, [$this->personId]);
         if (!$stmt) {
             return false;
         }
-        
-        $stmt->bind_param("i", $this->personId);
-        $result = $stmt->execute();
-        
-        if (!$result) {
-            echo "Execute failed: " . $stmt->error;
-        } else {
-            echo "Donor with ID " . $donorId . " marked as deleted.\n";
-        }
-        
-        return $result;
+
+        return true;
     }
 
-
     public function findByEmail($email) {
-        
-       
-        $conn = DBConnection::getInstance()->getConnection();
-    
-       
         $email = trim($email);
-    
-        
-        $query = "SELECT Person.ID as PersonID, Person.Email, Donor.ID as DonorID,Person.IsDeleted
+
+        $query = "SELECT Person.ID as PersonID, Person.Email, Donor.ID as DonorID, Person.IsDeleted
                   FROM Donor 
                   INNER JOIN Person ON Donor.PersonID = Person.ID 
                   WHERE Person.Email = ? 
                   AND Person.IsDeleted = 0
                   ORDER BY Person.ID DESC
                   LIMIT 1";
-    
-       
-        $stmt = $conn->prepare($query);
+
+        $stmt = $this->dbProxy->prepare($query, [$email]);
         if (!$stmt) {
-            return false; 
+            return false;
         }
-        
-        $stmt->bind_param("s", $email);
-    
-        if (!$stmt->execute()) {
-            return false; 
-        }
-    
-        $stmt->bind_result($this->personId, $this->email, $this->id,$this->IsDeleted);
-    
+
+        $stmt->bind_result($this->personId, $this->email, $this->id, $this->IsDeleted);
+
         if ($stmt->fetch()) {
             if ($this->IsDeleted) {
                 return false;
-            }
-            else {
+            } else {
                 return true;
             }
         } else {
