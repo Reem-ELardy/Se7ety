@@ -1,4 +1,9 @@
 <?php
+require_once __DIR__ . '/../DB-creation/IDatabase.php';
+require_once __DIR__ . '/../DB-creation/DBProxy.php';
+require_once 'Person-Model.php';
+
+
 class Patient extends Person {
     protected $id;
     protected $personId;
@@ -6,17 +11,21 @@ class Patient extends Person {
     protected $needs;
     protected $nationalId;
     protected $needslist=[];
+    private $dbProxy;
+
 
     public function __construct($id = null, $personId = null, $name = "", $needs = "", $nationalId = null,
                                  $age = 0,  $medicalHistory = "", $needslist = [],
                                  $password = "", $email = "", $addressId = null, $IsDeleted = false) {
         // Initialize the parent class (Person)
         parent::__construct($id, $name, $age, $password, $email, $addressId, $IsDeleted);
+        $this->dbProxy = new DBProxy($name); 
         $this->personId = $personId;
         $this->medicalHistory = $medicalHistory;
         $this->needs = $needs;
         $this->needslist = $needslist;
         $this->nationalId = $nationalId;
+
     }
 
     // Getters and Setters for Volunteer attributes
@@ -62,161 +71,49 @@ class Patient extends Person {
     public function setNeedslist($needslist) {
         $this->needslist = $needslist;
     }
-    public function createPatientNeed(int $medicalID, int $patientID, String $status) {
-        $conn = DBConnection::getInstance()->getConnection();
 
-        // Prepare the insert statement
-        $query = "INSERT INTO PatientNeed (MedicalID, PatientID, Status) VALUES (?, ?, ?)";
-        $stmt = $conn->prepare($query);
-        if (!$stmt) {
-            return false;
-        }
-
-        $stmt->bind_param("iis", $medicalID, $patientID, $status);
-        $result = $stmt->execute();
-        $stmt->close();
-
-        return $result;
-    }
-
-    // Function to update an existing PatientNeed record
-    public function updatePatientNeed(int $medicalID, int $patientID, String $status) {
-        $conn = DBConnection::getInstance()->getConnection();
-
-        // Prepare the update statement
-        $query = "UPDATE PatientNeed SET MedicalID = ?, PatientID = ?, Status = ? WHERE MedicalID = ? AND PatientID = ?";
-        $stmt = $conn->prepare($query);
-        if (!$stmt) {
-            return false;
-        }
-
-        $stmt->bind_param("iisii", $medicalID, $patientID, $status, $medicalID, $patientID);
-        $result = $stmt->execute();
-        $stmt->close();
-
-        return $result;
-    }
-
-    // Function to read a PatientNeed record from the database
-    public function readPatientNeed(int $medicalID, int $patientID): ?array {
-        $conn = DBConnection::getInstance()->getConnection();
-
-        // Prepare the select statement
-        $query = "SELECT MedicalID, PatientID, Status FROM PatientNeed WHERE MedicalID = ? AND PatientID = ?";
-        $stmt = $conn->prepare($query);
-        if (!$stmt) {
-            return null;
-        }
-
-        // Bind parameters and execute the query
-        $stmt->bind_param("ii", $medicalID, $patientID);
-        $stmt->execute();
-        $stmt->bind_result($medicalID, $patientID, $status);
-        $stmt->fetch();
-
-        if ($medicalID && $patientID) {
-            $result = [
-                'MedicalID' => $medicalID,
-                'PatientID' => $patientID,
-                'Status' => $status
-            ];
-            $stmt->close();
-            return $result;
-        }
-
-        $stmt->close();
-        return null;
-    }
-
-    // Function to delete a PatientNeed record
-    public function deletePatientNeed(int $medicalID, int $patientID): bool {
-        $conn = DBConnection::getInstance()->getConnection();
-
-        // Prepare the delete statement
-        $query = "DELETE FROM PatientNeed WHERE MedicalID = ? AND PatientID = ?";
-        $stmt = $conn->prepare($query);
-        if (!$stmt) {
-            return false;
-        }
-
-        // Bind parameters and execute the delete
-        $stmt->bind_param("ii", $medicalID, $patientID);
-        $result = $stmt->execute();
-        $stmt->close();
-
-        return $result;
-    }
-
-    public function createPatient() {
-        $conn = DBConnection::getInstance()->getConnection();
-        
+    public function createPatient() {        
         // First, create the associated Person record
         if ($this->id === null) {
-            $personCreated = $this->createPerson();
-            if (!$personCreated) {
+            $personId = $this->createPerson();
+            if (!$personId) {
                 return false;
             }
+            $this->personId = $personId; 
         }
 
         // Create Volunteer record
         $query = "INSERT INTO Patient (PersonID) VALUES (?)";
-        $stmt = $conn->prepare($query);
-        if (!$stmt) {
-            echo "Prepare failed: " . $conn->error;
-            return false;
-        }
 
-        $stmt->bind_param("i", $this->id);
-        $result = $stmt->execute();
-        if (!$result) {
-            echo "Execute failed: " . $stmt->error;
-        } else {
-            $this->personId = $this->id;
-            $this->id = $conn->insert_id;
+        $stmt = $this->dbProxy->prepare($query, [$this->id]);
+
+        if ($stmt) {
+            $this->id = $this->dbProxy->getInsertId();
+            return true;
         }
-        return $result;
+    
+        return false;
     }
 
     public function updatePatient() {
-        $conn = DBConnection::getInstance()->getConnection();
+        $personUpdated = $this->updatePerson([$this->name, $this->age, $this->password, $this->email, $this->addressId, $this->personId]);
 
-        // Update the Person record (related to the volunteer)
-        $query = "UPDATE Person SET Name = ?, Age = ?, Password = ?, Email = ?, AddressID = ? WHERE ID = ?";
-        $stmt = $conn->prepare($query);
-        if (!$stmt) {
-            echo "Prepare failed: " . $conn->error;
-            return false;
-        }
-
-        // Bind parameters and execute the update for the person data
-        $stmt->bind_param("sissii", $this->name, $this->age, $this->password, $this->email, $this->addressId, $this->personId);
-        $result = $stmt->execute();
-        if (!$result) {
-            echo "Execute failed: " . $stmt->error;
-            return false;
+        if (!$personUpdated) {
+            return false;  // Person update failed
         }
 
         // Update Volunteer record
         $query = "UPDATE Patient SET PersonID = ? WHERE ID = ?";
-        $stmt = $conn->prepare($query);
+        $stmt = $this->dbProxy->prepare($query, [ $this->personId, $this->id]);
+
+
         if (!$stmt) {
-            echo "Prepare failed: " . $conn->error;
             return false;
         }
-
-        $stmt->bind_param("ii", $this->personId, $this->id);
-        $result = $stmt->execute();
-        if (!$result) {
-            echo "Execute failed: " . $stmt->error;
-            return false;
-        }
-
         return true;
     }
 
     public function login($email, $enteredPassword) {
-        $conn = DBConnection::getInstance()->getConnection();
-
         $email = trim($email);
         $query = "SELECT Person.ID as PersonID, Person.Name, Person.Age, Person.Password, Person.Email, Person.AddressID, Patient.ID as PatientID
                   FROM Patient 
@@ -225,18 +122,10 @@ class Patient extends Person {
                   ORDER BY Person.ID DESC
                   LIMIT 1";
 
-        $stmt = $conn->prepare($query);
-        if (!$stmt) {
-            return false;
-        }
-
-        $stmt->bind_param("s", $email);
-        if (!$stmt->execute()) {
-            return false;
-        }
+        $stmt = $this->dbProxy->prepare($query, [$email]);
 
         $stmt->bind_result($this->personId, $this->name, $this->age, $this->password, $this->email, $this->addressId, $this->id);
-        if ($stmt->fetch() && $enteredPassword === $this->password) {
+        if ($stmt->fetch() && $enteredPassword === $this->password && !$this->IsDeleted) {
             return true;
         }
         return false;
@@ -270,7 +159,6 @@ class Patient extends Person {
     }
 
     public function readPatient($patientId) {
-        $conn = DBConnection::getInstance()->getConnection();
 
         // Load the volunteer's details based on their ID
         $query = "SELECT Person.ID as PersonID, Person.Name, Person.Age, Person.Password, Person.Email, Person.AddressID, Patient.ID as PatientID
@@ -278,14 +166,7 @@ class Patient extends Person {
                   INNER JOIN Person ON Patient.PersonID = Person.ID 
                   WHERE Patient.ID = ?";
         
-        $stmt = $conn->prepare($query);
-        if (!$stmt) {
-            echo "Prepare failed: " . $conn->error;
-            return false;
-        }
-
-        $stmt->bind_param("i", $patientId);
-        $stmt->execute();
+        $stmt = $this->dbProxy->prepare($query, [$patientId]);
 
         $stmt->bind_result($this->personId, $this->name, $this->age, $this->password, $this->email, $this->addressId, $this->id);
 
@@ -297,41 +178,22 @@ class Patient extends Person {
     }
 
     public function delete($patientId) {
-        $conn = DBConnection::getInstance()->getConnection();
-
         if ($patientId === null) {
-            echo "Error: Person ID is not set.";
             return false;
         }
     
+        // Delete (mark as deleted) the donor record
         $query = "UPDATE Person SET IsDeleted = true WHERE ID = ?";
-        $stmt = $conn->prepare($query);
-        
+        $stmt = $this->dbProxy->prepare($query, [$this->personId]);
         if (!$stmt) {
-            echo "Prepare failed: " . $conn->error;
             return false;
         }
-        
-        $stmt->bind_param("i", $this->personId);
-        $result = $stmt->execute();
-        
-        if (!$result) {
-            echo "Execute failed: " . $stmt->error;
-        } else {
-            echo "Patient with ID " . $patientId . " marked as deleted.\n";
-        }
-        
-        return $result;
+
+        return true;
     }
 
-    public function findByEmail($email) {
-        
-       
-        $conn = DBConnection::getInstance()->getConnection();
-    
-       
+    public function findByEmail($email) {       
         $email = trim($email);
-    
         
         $query = "SELECT Person.ID as PersonID, Person.Email, Patient.ID as PatientID, Person.IsDeleted
                   FROM Patient 
@@ -341,15 +203,9 @@ class Patient extends Person {
                   ORDER BY Person.ID DESC
                   LIMIT 1";
     
-       
-        $stmt = $conn->prepare($query);
-        if (!$stmt) {
-            return false; 
-        }
-        
-        $stmt->bind_param("s", $email);
+        $stmt = $this->dbProxy->prepare($query, [$email]);
     
-        if (!$stmt->execute()) {
+        if (!$stmt) {
             return false; 
         }
     
