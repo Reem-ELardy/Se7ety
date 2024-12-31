@@ -1,5 +1,7 @@
 <?php
-require_once __DIR__ . "/../DB-creation/DB-Connection.php";
+require_once __DIR__ . '/../DB-creation/IDatabase.php';
+require_once __DIR__ . '/../DB-creation/DBProxy.php';
+require_once 'Person-Model.php';
 
 class Volunteer extends Person {
     protected $id;
@@ -12,6 +14,8 @@ class Volunteer extends Person {
     protected $age;
     protected $skills = [];
     protected $certificates = [];
+    private $dbProxy;
+
 
     public function __construct($id = null, $personId = null, $name = "", $gender = "", $nationalId = null, $job = "",
                                  $age = 0, $available = false, $volunteerHours = 0, $skills = [], $certificates = [],
@@ -26,6 +30,8 @@ class Volunteer extends Person {
         $this->nationalId = $nationalId;
         $this->skills = $skills;
         $this->certificates = $certificates;
+        $this->dbProxy = new DBProxy($name);
+
     }
 
     // Getters and Setters for Volunteer attributes
@@ -110,31 +116,29 @@ class Volunteer extends Person {
     }
 
     public function login($email, $enteredPassword) {
-        $conn = DBConnection::getInstance()->getConnection();
-
         $email = trim($email);
-        $query = "SELECT Person.ID as PersonID, Person.Name, Person.Age, Person.Password, Person.Email, Person.AddressID, Volunteer.ID as VolunteerID, Person.IsDeleted
+    
+        $query = "SELECT Person.ID AS PersonID, Person.Name, Person.Age, Person.Password, Person.Email, Person.AddressID, Volunteer.ID AS VolunteerID, Person.IsDeleted
                   FROM Volunteer 
                   INNER JOIN Person ON Volunteer.PersonID = Person.ID 
                   WHERE Person.Email = ?
                   ORDER BY Person.ID DESC
                   LIMIT 1";
-        $stmt = $conn->prepare($query);
-        if (!$stmt) {
-            return false;
-        }
-
-        $stmt->bind_param("s", $email);
-        if (!$stmt->execute()) {
-            return false;
-        }
-
+    
+        // Prepare the query and handle errors
+        $stmt = $this->dbProxy->prepare($query, [$email]);
         $stmt->bind_result($this->personId, $this->name, $this->age, $this->password, $this->email, $this->addressId, $this->id, $this->IsDeleted);
-        if ($stmt->fetch() && $enteredPassword === $this->password && !$this->IsDeleted) {
-            return true;
+
+        // Fetch the results and validate the password
+        if ($stmt->fetch()) {
+            if (($enteredPassword == $this->password) && !$this->IsDeleted) {
+                return true;
+            }
         }
+        // If the query or validation fails, return false
         return false;
     }
+    
 
     public function signup($name, $age, $password, $email) {
         // Input validation (you can expand this to include more robust checks)
@@ -164,65 +168,38 @@ class Volunteer extends Person {
     }
 
     public function createVolunteer() {
-        $conn = DBConnection::getInstance()->getConnection();
 
-        // First, create the associated Person record
         if ($this->id === null) {
-            $personCreated = $this->createPerson();
-            if (!$personCreated) {
+            $personId = $this->createPerson();
+            if (!$personId) {
                 return false;
             }
+            $this->personId = $personId; 
         }
 
-        // Create Volunteer record
-        $query = "INSERT INTO Volunteer (PersonID, Job, VolunteerHours, Available, Gender) VALUES (?, ?, ?, ?, ?)";
-        $stmt = $conn->prepare($query);
-        if (!$stmt) {
-            echo "Prepare failed: " . $conn->error;
-            return false;
+        $query = "INSERT INTO Volunteer (PersonID) VALUES (?)";
+        $stmt = $this->dbProxy->prepare($query, [$this->id]);
+        
+        if ($stmt) {
+            $this->id = $this->dbProxy->getInsertId();
+            return true;
         }
-
-        $stmt->bind_param("isiss", $this->id, $this->job, $this->volunteerHours, $this->available, $this->gender);
-        $result = $stmt->execute();
-        if (!$result) {
-            echo "Execute failed: " . $stmt->error;
-        } else {
-            $this->personId = $this->id;
-            $this->id = $conn->insert_id;
-        }
-        return $result;
+    
+        return false;
     }
 
     public function updateVolunteer() {
-        $conn = DBConnection::getInstance()->getConnection();
-        // Update the Person record (related to the volunteer)
-        $query = "UPDATE Person SET Name = ?, Age = ?, Password = ?, Email = ?, AddressID = ? WHERE ID = ?";
-        $stmt = $conn->prepare($query);
-        if (!$stmt) {
-            echo "Prepare failed: " . $conn->error;
-            return false;
-        }
+        $personUpdated = $this->updatePerson([$this->name, $this->age, $this->password, $this->email, $this->addressId, $this->personId]);
 
-        // Bind parameters and execute the update for the person data
-        $stmt->bind_param("sisssi", $this->name, $this->age, $this->password, $this->email, $this->addressId, $this->personId);
-        $result = $stmt->execute();
-        if (!$result) {
-            echo "Execute failed: " . $stmt->error;
-            return false;
+        if (!$personUpdated) {
+            return false;  // Person update failed
         }
 
         // Update Volunteer record
         $query = "UPDATE Volunteer SET Job = ?, VolunteerHours = ?, Available = ?, Gender = ? WHERE ID = ?";
-        $stmt = $conn->prepare($query);
-        if (!$stmt) {
-            echo "Prepare failed: " . $conn->error;
-            return false;
-        }
+        $stmt = $this->dbProxy->prepare($query, [$this->job, $this->volunteerHours, $this->available, $this->gender, $this->id]);
 
-        $stmt->bind_param("sisii", $this->job, $this->volunteerHours, $this->available, $this->gender, $this->id);
-        $result = $stmt->execute();
-        if (!$result) {
-            echo "Execute failed: " . $stmt->error;
+        if (!$stmt) {
             return false;
         }
 
@@ -230,21 +207,15 @@ class Volunteer extends Person {
     }
 
     public function readVolunteer($volunteerId) {
-        $conn = DBConnection::getInstance()->getConnection();
         // Load the volunteer's details based on their ID
         $query = "SELECT Person.ID as PersonID, Person.Name, Person.Age, Person.Password, Person.Email, Person.AddressID, Volunteer.ID as VolunteerID, Volunteer.Job, Volunteer.VolunteerHours, Volunteer.Available, Volunteer.Gender
                   FROM Volunteer 
                   INNER JOIN Person ON Volunteer.PersonID = Person.ID 
                   WHERE Volunteer.ID = ?";
-        
-        $stmt = $conn->prepare($query);
-        if (!$stmt) {
-            echo "Prepare failed: " . $conn->error;
-            return false;
-        }
+    
 
-        $stmt->bind_param("i", $volunteerId);
-        $stmt->execute();
+        $stmt = $this->dbProxy->prepare($query, [$volunteerId]);
+
 
         $stmt->bind_result($this->personId, $this->name, $this->age, $this->password, $this->email, $this->addressId, $this->id, $this->job, $this->volunteerHours, $this->available, $this->gender);
 
@@ -256,40 +227,22 @@ class Volunteer extends Person {
     }
 
     public function delete($volunteerId) {
-        $conn = DBConnection::getInstance()->getConnection();
         if ($volunteerId === null) {
-            echo "Error: Person ID is not set.";
             return false;
         }
 
+        // Delete (mark as deleted) the donor record
         $query = "UPDATE Person SET IsDeleted = true WHERE ID = ?";
-        $stmt = $conn->prepare($query);
-
+        $stmt = $this->dbProxy->prepare($query, [$this->personId]);
         if (!$stmt) {
-            echo "Prepare failed: " . $conn->error;
             return false;
         }
 
-        $stmt->bind_param("i", $this->personId);
-        $result = $stmt->execute();
-
-        if (!$result) {
-            echo "Execute failed: " . $stmt->error;
-        } else {
-            echo "Volunteer with ID " . $volunteerId . " marked as deleted.\n";
-        }
-
-        return $result;
+        return true;
     }
 
-    public function findByEmail($email) {
-        
-       
-        $conn = DBConnection::getInstance()->getConnection();
-    
-       
+    public function findByEmail($email) {       
         $email = trim($email);
-    
         
         $query = "SELECT Person.ID as PersonID, Person.Email, Person.IsDeleted, Volunteer.ID as VolunteerID
                   FROM Volunteer 
@@ -300,15 +253,9 @@ class Volunteer extends Person {
                   LIMIT 1";
     
        
-        $stmt = $conn->prepare($query);
+        $stmt = $this->dbProxy->prepare($query, [$email]);
         if (!$stmt) {
-            return false; 
-        }
-        
-        $stmt->bind_param("s", $email);
-    
-        if (!$stmt->execute()) {
-            return false; 
+            return false;
         }
     
         $stmt->bind_result($this->personId, $this->email,$this->IsDeleted, $this->id);
