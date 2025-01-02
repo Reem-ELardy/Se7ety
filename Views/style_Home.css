@@ -1,0 +1,123 @@
+html, body {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: 'Poppins', sans-serif;
+  background-image: url('./Assets/composition-still-life-friendship-day-elements.jpg');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.container {
+  background-color: rgba(255, 255, 255, 0.9); /* Match login page transparency */
+  padding: 40px;
+  border-radius: 10px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* Subtle shadow like login page */
+  width: 350px;
+  text-align: center;
+}
+
+header h1 {
+  color: #2C3E50; /* Match login page header color */
+  margin-bottom: 20px;
+  font-size: 24px;
+}
+
+.donations {
+  margin: 20px 0;
+  text-align: left; /* Align donation text for better readability */
+}
+
+/* Radio Button Group */
+.radio-group {
+  margin-bottom: 20px;
+  text-align: left;
+}
+
+.radio-group label {
+  margin-right: 20px;
+  font-size: 16px;
+  color: #333;
+}
+
+.form-group {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+}
+
+.form-group label {
+  width: 40%;
+  font-size: 14px;
+  color: #333;
+}
+
+.input-field {
+  width: 55%;
+  padding: 8px;
+  font-size: 14px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+}
+
+.donations h2 {
+  color: #2C3E50; /* Match login page header color */
+  font-size: 20px;
+  margin-bottom: 10px;
+}
+
+.donations ul {
+  list-style-type: none;
+  padding: 0;
+  margin: 0;
+}
+
+.donations li {
+  margin: 8px 0;
+  color: #555; /* Subtle text color */
+  font-size: 16px;
+}
+
+.donate-button {
+  width: 100%; /* Match button width in login page */
+  background-color: #007bff; /* Use same button color as login page */
+  color: white;
+  padding: 10px;
+  border: none;
+  border-radius: 5px;
+  font-size: 16px;
+  cursor: pointer;
+  margin-top: 20px;
+  transition: background-color 0.3s ease;
+}
+
+.donate-button:hover {
+  background-color: #0056b3; /* Hover effect matches login page */
+}
+
+
+.back-button {
+  width: 150px; /* Adjust button width */
+  background-color: #6c757d; /* Gray button for back navigation */
+  color: white;
+  padding: 10px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 16px;
+  margin: 0 auto 20px; /* Center the button with some margin */
+  display: block;
+  transition: background-color 0.3s ease;
+}
+
+.back-button:hover {
+  background-color: #5a6268; /* Darker gray for hover effect */
+}

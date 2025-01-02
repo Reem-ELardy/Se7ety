@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Make a Donation</title>
+    <link rel="stylesheet" href="style_Home.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Make a Donation</h1>
+        </header>
+        
+
+        
+        <section class="donation-options">
+            <h2>Select Donation Type</h2>
+            <form id="donation-form">
+                <div class="radio-group">
+                    <label>
+                        <input type="radio" name="donation-type" value="money" checked>
+                        Money Donation
+                    </label>
+                    <label>
+                        <input type="radio" name="donation-type" value="medical">
+                        Medical Donation
+                    </label>
+                </div>
+
+                <!-- Money Donation Section -->
+                <div id="money-donation-section">
+                    <div class="form-group">
+                        <label for="money-amount">Amount ($):</label>
+                        <input type="number" id="money-amount" class="input-field" placeholder="Enter amount">
+                    </div>
+                </div>
+
+                <!-- Medical Donation Section -->
+                <div id="medical-donation-section" style="display: none;">
+                    <div class="form-group">
+                        <label for="medical-name">Name:</label>
+                        <input type="text" id="medical-name" class="input-field" placeholder="Enter name">
+                    </div>
+                    <div class="form-group">
+                        <label for="medical-type">Type:</label>
+                        <input type="text" id="medical-type" class="input-field" placeholder="Enter type">
+                    </div>
+                    <div class="form-group">
+                        <label for="medical-quantity">Quantity:</label>
+                        <input type="number" id="medical-quantity" class="input-field" placeholder="Enter quantity">
+                    </div>
+                    <div class="form-group">
+                        <label for="expiration-date">Expiration Date:</label>
+                        <input type="date" id="expiration-date" class="input-field">
+                    </div>
+                </div>
+
+                <button type="submit" class="donate-button">Submit Donation</button>
+            </form>
+        </section>
+    </div>
+
+    <script>
+        // Toggle between donation types
+        document.querySelectorAll('input[name="donation-type"]').forEach(radio => {
+            radio.addEventListener('change', (event) => {
+                const moneySection = document.getElementById('money-donation-section');
+                const medicalSection = document.getElementById('medical-donation-section');
+                
+                if (event.target.value === 'money') {
+                    moneySection.style.display = 'block';
+                    medicalSection.style.display = 'none';
+                } else {
+                    moneySection.style.display = 'none';
+                    medicalSection.style.display = 'block';
+                }
+            });
+        });
+    </script>
+</body>
+</html>
