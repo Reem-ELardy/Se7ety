@@ -77,6 +77,10 @@ abstract class Donation {
     }
 
     abstract protected function Payment($paymentMethod, $PaymentDetails, $details);
+    
+    //State Funtions
+    abstract public function ProcessDonation();
+    abstract public function CompleteDonation();
 
 
     //CRUD Functions
