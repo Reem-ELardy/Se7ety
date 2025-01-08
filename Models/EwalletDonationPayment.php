@@ -1,13 +1,24 @@
 <?php
-class EWalletDonation implements IDonationMethodStrategy {
+class EWalletDonationPayment implements IDonationPaymentStrategy {
     private int $transactionID;
+    private float $EwalletTax = 0.2;
 
-    public function __construct(int $transactionID) {
+
+    public function __construct($transactionID = 0) {
         $this->transactionID = $transactionID;
     }
 
-    public function processDonation(float $amount, int $quantity, string $itemDescription): void {
-        echo "Processing e-wallet donation of $$amount with transaction ID $this->transactionID.\n";
+    public function calculations($details){
+        $data = [
+            'Tax' => $this->EwalletTax, 
+            'Total Price' => $details + ($details * $this->EwalletTax)
+        ];
+
+        return $data;
+    }
+
+    public function processPayment($details){
+        return ($details + $details * $this->EwalletTax);
     }
 }
 
