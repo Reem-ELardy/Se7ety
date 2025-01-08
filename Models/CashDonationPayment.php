@@ -1,8 +1,23 @@
 <?php
 
-class CashDonation implements IDonationMethodStrategy {
-    public function processDonation(float $amount, int $quantity, string $itemDescription): void {
-        echo "Processing cash donation of $$amount.\n";
+class CashDonationPayment implements IDonationPaymentStrategy {
+    private float $cahshTax = 0.1;
+
+    public function calculations($details){
+        $data = [
+            'Tax' => $this->cahshTax, 
+            'Total Price' => $details + ($details * $this->cahshTax)
+        ];
+
+        return $data;
+    }
+
+    public function processPayment($details){
+        if (is_array($details)) {
+            return $details[0];
+        } else{
+            return ($details + $details * $this->cahshTax);
+        }
     }
 }
 
