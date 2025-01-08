@@ -1,7 +1,12 @@
 <?php
+require_once 'IDonationPaymentStrategy.php';
+require_once 'EWalletDonationPayment.php';
+require_once 'CardDonationPayment.php';
+require_once 'CashDonationPayment.php';
 require_once 'Donation.php';
 
 class MoneyDonation extends Donation {
+    protected IDonationPaymentStrategy $donationMethod;
     private float $minAmount = 10.0;
     private $cash;
 
@@ -42,6 +47,19 @@ class MoneyDonation extends Donation {
             return true;
         }
         return false;
+    }
+
+    //Payment using Payment Strategy
+    public function payment($paymentMethod, $PaymentDetails, $details){
+        if($paymentMethod == 'Cash'){
+            $this->donationMethod = new CashDonationPayment();
+        }elseif($paymentMethod == 'Card'){
+            $this->donationMethod = new CardDonationPayment($PaymentDetails);
+        }elseif($paymentMethod == 'Ewallet'){
+            $this->donationMethod = new EWalletDonationPayment($PaymentDetails);
+        }
+
+        return $this->donationMethod->processPayment($details);
     }
 
 }

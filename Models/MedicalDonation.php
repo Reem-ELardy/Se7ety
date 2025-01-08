@@ -1,13 +1,15 @@
 <?php
 require_once __DIR__ . '/../DB-creation/IDatabase.php';
 require_once __DIR__ . '/../DB-creation/DBProxy.php';
+require_once 'IDonationPaymentStrategy.php';
+require_once 'InKindDonationPayment.php';
 require_once 'Donation.php';
 require_once 'Medical.php';
 
 
 
 class MedicalDonation extends Donation {
-
+    protected IDonationPaymentStrategy $donationMethod;
     private  $medicalItems = [];
    
 
@@ -134,6 +136,13 @@ class MedicalDonation extends Donation {
             return false;
         }
         return true;
+    }
+
+    //Payment using Payment Strategy
+    public function payment($paymentMethod, $PaymentDetails = null, $details){
+        $this->donationMethod = new InKindDonationPayment();
+
+        return $this->donationMethod->processPayment($details);
     }
 
     
