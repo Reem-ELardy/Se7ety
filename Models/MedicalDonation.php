@@ -5,12 +5,16 @@ require_once 'IDonationPaymentStrategy.php';
 require_once 'InKindDonationPayment.php';
 require_once 'Donation.php';
 require_once 'Medical.php';
+require_once 'IMedicalDonationState.php';
+require_once 'MedeicalpendingState.php';
+
 
 
 
 class MedicalDonation extends Donation {
     protected IDonationPaymentStrategy $donationMethod;
     private  $medicalItems = [];
+    protected IMedicalDonationState $state;
    
 
     public function __construct(
@@ -25,14 +29,21 @@ class MedicalDonation extends Donation {
         
        $this->dbProxy = new DBProxy('user');
        $this->medicalItems = $medicalItems;
+       $this->state = new MedicalpendingState(); 
     }
+
+
     public function validate($medicalItems){
         foreach ($medicalItems as &$item) {
             if ($item['quantity'] <= 0) {
-                return false ;
+                throw new Exception("All quantaty od the medical item must be greater than 0 ") ;
             }
         }
         return true;
+    }
+
+    public function SetState($state){
+        $this->state=$state;
     }
   
     public function addToMedicalItems( $MedicalName,  $MedicalType,  $quantity): void {
@@ -137,12 +148,24 @@ class MedicalDonation extends Donation {
         }
         return true;
     }
+    /*State Function for State DP*/
+    public function ProcessDonation(): void{
+        $this->state->ProsscingDonation($this);
+    }
+
+    public function CompleteDonation(){
+       $this->state->NextState($this);
+       $this->ProcessDonation();
+
+
+    }
 
     //Payment using Payment Strategy
     public function payment($paymentMethod, $PaymentDetails = null, $details){
+      $DonatoinMedical= $this->getDonationMedicalItem($this->getDonationId());
         $this->donationMethod = new InKindDonationPayment();
 
-        return $this->donationMethod->processPayment($details);
+        return $this->donationMethod->processPayment($DonatoinMedical);
     }
 
     
