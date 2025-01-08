@@ -73,13 +73,14 @@ class DBConnection implements IDatabase
             } elseif (is_string($param)) {
                 $types .= 's'; 
             } elseif (is_null($param)) {
-                $types .= 's'; // Treat NULL as a string
+                $types .= 's'; 
             } else {
-                throw new Exception("Unsupported parameter type");
+                throw new Exception("Unsupported parameter type: " . gettype($param) . " - Value: " . var_export($param, true));
             }
         }
         return $types;
     }
+
 
     public function getInsertId() {
         return $this->connection->insert_id;
@@ -88,14 +89,19 @@ class DBConnection implements IDatabase
 
 function run_queries_create_DB($queries, $echo = false): array
 {
-    $conn = DBConnection::getInstance()->getConnection(); // Use DBConnection instance
+    $host = "localhost";
+    $username = "root";
+    $password = "";
+    $conn = mysqli_connect($host, $username, $password);
     $ret = [];
     foreach ($queries as $query) {
-        $ret[] = $conn->query($query); // Append result
+        $ret[] = $conn->query($query);
         if ($echo) {
             print($ret[array_key_last($ret)] === TRUE ? "Query ran successfully<br/>" : "Error: " . $conn->error);
         }
     }
+    mysqli_close($conn);
+
     return $ret;
 }
 
