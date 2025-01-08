@@ -1,7 +1,8 @@
 <?php
 
-interface IDonationMethodStrategy {
-    public function processDonation(float $amount, int $quantity, string $itemDescription): void;
+interface IDonationPaymentStrategy {
+    public function calculations($details);
+    public function processPayment($details);
 }
 
 ?>
