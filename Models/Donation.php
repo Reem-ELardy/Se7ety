@@ -76,6 +76,8 @@ abstract class Donation {
         $this->donationtype = DonationType::from($donationType);
     }
 
+    abstract protected function Payment($paymentMethod, $PaymentDetails, $details);
+
 
     //CRUD Functions
     public function createDonation() {      
