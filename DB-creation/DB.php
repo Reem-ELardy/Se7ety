@@ -79,7 +79,6 @@ run_queries_create_DB(
             DonorID INT,
             Date DATE,
             Time TIME,
-            Status ENUM('Pending', 'Done'),
             IsDeleted tinyint(1) NOT NULL DEFAULT 0,
             FOREIGN KEY (DonorID) REFERENCES Donor(ID) ON DELETE CASCADE
         )",
@@ -89,6 +88,7 @@ run_queries_create_DB(
             DonateID INT,
             Type ENUM('Medical', 'Money'),
             CashAmount DECIMAL(10, 2),
+            Status ENUM('Pending', 'Done'),
             IsDeleted tinyint(1) NOT NULL DEFAULT 0,
             FOREIGN KEY (DonateID) REFERENCES Donate(ID)
         )",
