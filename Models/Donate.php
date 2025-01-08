@@ -146,7 +146,7 @@ class Donate {
         return $totalAmount;
     }
 
-    public function generateReceipt(): void {
+    /*public function generateReceipt(): void {
         echo "Donation Receipt\n";
         echo "Donate ID: " . $this->Donate_ID . "\n";
         echo "Donor ID: " . $this->DonorID . "\n";
@@ -166,7 +166,7 @@ class Donate {
                 }
             }
         }
-    }
+    }*/
     
 }
 
