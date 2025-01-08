@@ -1,21 +1,43 @@
 <?php
 
-class CheckDonation implements IDonationMethodStrategy {
-    private string $checkNumber;
+class CardDonationPayment implements IDonationPaymentStrategy {
+    private $visaNumber;
     private DateTime $expirationDate;
-    private string $bankName;
+    private $bankName;
+    private float $cardTax = 0.3;
 
-    public function __construct(string $checkNumber, DateTime $expirationDate, string $bankName) {
-        $this->checkNumber = $checkNumber;
-        $this->expirationDate = $expirationDate;
-        $this->bankName = $bankName;
+
+    public function __construct($details = null) {
+        $this->visaNumber = $details[0] ?? '';
+        $this->expirationDate = $details[1] ?? new DateTime();
+        $this->bankName = $details[2] ?? '';
     }
 
-    public function processDonation(float $amount, int $quantity, string $itemDescription): void {
-        echo "Processing check donation of $$amount from $this->bankName with check number $this->checkNumber.\n";
+    public function validateVisa(DateTime $expirationDate){
+        $currentDate = new DateTime();
+        if ($expirationDate >= $currentDate) {
+            return true;
+        }
+        return false;
+    }
+
+    public function calculations($details){
+        $data = [
+            'Tax' => $this->cardTax, 
+            'Total Price' => $details + ($details * $this->cardTax)
+        ];
+
+        return $data;
+    }
+
+
+    public function processPayment($details){
+        if($this->validateVisa($this->expirationDate)){
+            return ($details + $details * $this->cardTax);
+        }
+
+        return false;
     }
 }
-
-
 
 ?>
