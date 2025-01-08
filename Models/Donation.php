@@ -76,7 +76,71 @@ abstract class Donation {
         $this->donationtype = DonationType::from($donationType);
     }
 
+    //Template Functions
+    public function processDonationTemplate($details, $donation_id) {
+        // Start session if it's not already started
+        if (session_status() == PHP_SESSION_NONE) {
+            session_start();
+        }
+    
+        // Retrieve the donation data for this specific donation ID
+        if (!isset($_SESSION['donations'][$donation_id])) {
+            return;
+        }
+        $donation = &$_SESSION['donations'][$donation_id];
+    
+        // Process donation steps based on the session state
+        if ($donation['donation_step'] == 'Started') {
+            if (!$this->validate($details)) {
+                $donation['donation_step'] = 'Validation Failed';
+                return;
+            }
+            // $this->validate($details);
+            $this->createDonation();
+            $this->ProcessDonation();
+            $donation['donation_step'] = 'PaymentMethod';
+            return;
+        }
+    
+        if ($donation['donation_step'] === 'PaymentMethod') {
+            $paymentMethod = $this->getState('Method', $donation_id);
+            $this->CalculatePayment($paymentMethod, $details, $donation_id);
+            $donation['donation_step'] = 'payment_done';
+            return;
+        }
+    
+        if ($donation['donation_step'] === 'payment_done') {
+            $paymentMethod = $donation['Method'];
+            echo $paymentMethod;
+            if (strtolower($paymentMethod) != 'cash' && strtolower($paymentMethod) != 'inkind') {
+                $PaymentDetails = $this->getState('PaymentDetails', $donation_id);
+                if (!$this->Payment($paymentMethod, $PaymentDetails, $details)) {
+                    $donation['donation_step'] = 'Payment Failed';
+                    return;
+                }
+                $this->CompleteDonation();
+            }
+        }
+
+        unset($_SESSION['donations'][$donation_id]);
+        return;
+    }
+    
+    
+    abstract protected function validate($data);
+    abstract protected function CalculatePayment($paymentMethod, $details, $donationSessionID);
+    protected function saveState($key, $value, $donationSessionID) {
+        $donation = &$_SESSION['donations'][$donationSessionID];
+        $donation[$key] = $value;
+    }
+    protected function getState($key, $donation_id) {
+        $donation = &$_SESSION['donations'][$donation_id];
+        return $donation[$key];
+    }
+
+    //Payment Funcion used for strategy
     abstract protected function Payment($paymentMethod, $PaymentDetails, $details);
+
     
     //State Funtions
     abstract public function ProcessDonation();
