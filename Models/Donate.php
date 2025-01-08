@@ -1,27 +1,25 @@
 <?php
-
+require_once __DIR__ . '/../DB-creation/IDatabase.php';
+require_once __DIR__ . '/../DB-creation/DBProxy.php';
 require_once "Donation.php";
+
 
 class Donate {
     private int $Donate_ID;
     private int $DonorID;
     private string $Date;
     private string $Time;
-    private bool $IsDeleted;
-    private array $Donation_Details = []; // Array to store Donation objects
+    private $IsDeleted;
+    private array $Donation_Details = []; 
+    private $dbProxy;
 
-    /**
-     * Constructor to initialize a Donate object.
-     * 
-     * @param int $DonorID The ID of the donor.
-     * @param string $Date The date of the donation.
-     * @param string $Time The time of the donation.
-     */
-    public function __construct(int $DonorID, string $Date, string $Time) {
+    public function __construct(int $DonorID, int $donateID = 0, string $Date = '', string $Time = '', $isDeleted = false) {
         $this->DonorID = $DonorID;
-        $this->Date = $Date;
-        $this->Time = $Time;
-        $this->IsDeleted = false; // Default value for new donations
+        $this->Donate_ID = $donateID;
+        $this->Date = $Date ?: date('Y-m-d');
+        $this->Time = $Time ?: date('H:i:s');
+        $this->IsDeleted = $isDeleted; 
+        $this->dbProxy = new DBProxy('user');
     }
 
     // Setters and Getters
@@ -74,185 +72,72 @@ class Donate {
     }
 
     // CRUD Operations
-    public function createDonate(array $donations, ?array $medicalItems = null): bool {
-        $conn = DBConnection::getInstance()->getConnection();
-    
-        try {
-            // Start a transaction
-            $conn->begin_transaction();
-    
-            // Step 1: Insert into the Donate table
-            $query = "INSERT INTO Donate (DonorID, Date, Time, IsDeleted) VALUES (?, ?, ?, 0)";
-            $stmt = $conn->prepare($query);
-    
-            if (!$stmt) {
-                throw new Exception("Prepare failed: " . $conn->error);
-            }
-    
-            $stmt->bind_param("iss", $this->DonorID, $this->Date, $this->Time);
-            $stmt->execute();
-    
-            // Get the auto-generated Donate_ID
-            $this->Donate_ID = $conn->insert_id;
-    
-            // Step 2: Handle Donations
-            foreach ($donations as $donation) {
-                if ($donation instanceof MedicalDonation && $medicalItems) {
-                    // Set medical items for MedicalDonation
-                    $donation->setMedicalItems($medicalItems);
-                }
-    
-                // Create the donation (pass the required arguments)
-                $donation->createDonation($this->Donate_ID, $medicalItems);
-            }
-    
-            // Commit the transaction
-            $conn->commit();
+
+    public function createDonate(): bool {
+        $query = "INSERT INTO Donate (DonorID, Date, Time, IsDeleted) VALUES (?, ?, ?, 0)";
+        $stmt = $this->dbProxy->prepare($query, [$this->DonorID, $this->Date, $this->Time]);
+
+        if($stmt){
+            $this->Donate_ID = $this->dbProxy->getInsertId();
             return true;
-        } catch (Exception $e) {
-            // Rollback in case of an error
-            $conn->rollback();
-            throw new Exception("Transaction failed: " . $e->getMessage());
-        } finally {
-            // Ensure the statement is closed
-            if (isset($stmt)) {
-                $stmt->close();
-            }
         }
+
+        return false;
     }
-    
 
     public function readDonate(int $Donate_ID): bool {
-        $conn = DBConnection::getInstance()->getConnection();
         $query = "SELECT * FROM Donate WHERE ID = ? AND IsDeleted = 0";
-        $stmt = $conn->prepare($query);
+        $stmt = $this->dbProxy->prepare($query, [$Donate_ID]);
     
-        if (!$stmt) {
-            throw new Exception("Prepare failed: " . $conn->error);
-        }
-    
-        $stmt->bind_param("i", $Donate_ID);
-        $stmt->execute();
-        $result = $stmt->get_result();
-    
-        if ($row = $result->fetch_assoc()) {
-            $this->Donate_ID = (int) $row['ID'];
-            $this->DonorID = (int) $row['DonorID'];
-            $this->Date = $row['Date'];
-            $this->Time = $row['Time'];
-            $this->IsDeleted = (bool) $row['IsDeleted'];
-    
-            // Fetch associated donations
-            $this->fetchDonations();
+        if ($stmt) {
+            $stmt->bind_result($this->Donate_ID, $this->DonorID, $this->Date, $this->Time, $this->IsDeleted);
+            $stmt->fetch();
             return true;
         }
-    
         return false;
     }
     
 
     public function updateDonate(): bool {
-        $conn = DBConnection::getInstance()->getConnection();
         $query = "UPDATE Donate SET DonorID = ?, Date = ?, Time = ?, IsDeleted = ? WHERE ID = ?";
-        $stmt = $conn->prepare($query);
+        $stmt = $this->dbProxy->prepare($query, [$this->DonorID, $this->Date, $this->Time, $this->IsDeleted, $this->Donate_ID]);
 
-        if (!$stmt) {
-            throw new Exception("Prepare failed: " . $conn->error);
+        if($stmt){
+            return true;
         }
-
-        $stmt->bind_param("issii", $this->DonorID, $this->Date, $this->Time, $this->IsDeleted, $this->Donate_ID);
-        return $stmt->execute();
+        return false;
     }
 
     public function deleteDonate(): bool {
-        $conn = DBConnection::getInstance()->getConnection();
         $query = "UPDATE Donate SET IsDeleted = 1 WHERE ID = ?";
-        $stmt = $conn->prepare($query);
+        $stmt = $this->dbProxy->prepare($query, [$this->Donate_ID]);
 
-        if (!$stmt) {
-            throw new Exception("Prepare failed: " . $conn->error);
+        if($stmt){
+            return true;
         }
 
-        $stmt->bind_param("i", $this->Donate_ID);
-        return $stmt->execute();
+        return false;
     }
 
-    private function fetchDonations(): void {
-        $conn = DBConnection::getInstance()->getConnection();
+    public function readUserDonates(int $DonorID) : array {
+        $query = "SELECT * FROM Donate WHERE DonorID = ? AND IsDeleted = 0";
+        $stmt = $this->dbProxy->prepare($query, [$DonorID]);
     
-        // Fetch all donations linked to the current Donate_ID
-        $query = "SELECT * FROM Donation WHERE DonateID = ? AND IsDeleted = 0";
-        $stmt = $conn->prepare($query);
+        if ($stmt) {
+            $stmt->store_result();
+            $stmt->bind_result($Donate_ID, $DonorID, $Date, $Time, $IsDeleted);
     
-        if (!$stmt) {
-            throw new Exception("Prepare failed: " . $conn->error);
-        }
-    
-        $stmt->bind_param("i", $this->Donate_ID);
-        $stmt->execute();
-        $result = $stmt->get_result();
-    
-        // Iterate through each donation record
-        while ($row = $result->fetch_assoc()) {
-            $donationID = (int) $row['ID'];
-            $type = $row['Type'];
-            $cashAmount = $row['CashAmount'] ?? 0.0;
-    
-            if ($type === 'Cash') {
-                // Handle Cash Donation
-                $donation = new MoneyDonation(new CashDonation(), $cashAmount);
-            } elseif ($type === 'Medical') {
-                // Handle Medical Donation
-                $medicalQuery = "SELECT MedicalID, Quantity FROM DonationMedical WHERE DonationID = ? AND IsDeleted = 0";
-                $medicalStmt = $conn->prepare($medicalQuery);
-    
-                if (!$medicalStmt) {
-                    throw new Exception("Prepare failed: " . $conn->error);
-                }
-    
-                $medicalStmt->bind_param("i", $donationID);
-                $medicalStmt->execute();
-                $medicalResult = $medicalStmt->get_result();
-    
-                $medicalItems = [];
-                while ($medicalRow = $medicalResult->fetch_assoc()) {
-                    $medicalID = (int) $medicalRow['MedicalID'];
-                    $quantity = (int) $medicalRow['Quantity'];
-    
-                    // Fetch the Medical object from the Medical table
-                    $medical = Medical::readMedical($medicalID);
-                    if (!$medical) {
-                        throw new Exception("Failed to fetch Medical item with ID: $medicalID");
-                    }
-    
-                    // Add the medical item in the expected format
-                    $medicalItems[] = [
-                        'medical' => $medical,
-                        'quantity' => $quantity,
-                    ];
-                }
-    
-                // Create a MedicalDonation object
-                $donation = new MedicalDonation(new InKindDonation());
-                $donation->setId($donationID);
-                $donation->setMedicalItems($medicalItems);
-    
-                $medicalStmt->close();
-            } else {
-                // Skip unknown types
-                continue;
+            $donates = [];
+            while ($stmt->fetch()) {
+                $donate = new Donate($DonorID, (int) $Donate_ID, $Date, $Time, $IsDeleted);
+                $donate->setDonateID($Donate_ID);
+                $donates[] = $donate;
             }
-    
-            // Set the ID and add the donation to the details array
-            $donation->setId($donationID);
-            $this->addDonation($donation);
+            return $donates;
         }
-    
-        // Close the main statement
-        $stmt->close();
+        return [];
     }
-    
-    
+
     public function getAmount(): float {
         $totalAmount = 0.0;
         foreach ($this->Donation_Details as $donation) {
