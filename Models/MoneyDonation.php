@@ -4,16 +4,20 @@ require_once 'EWalletDonationPayment.php';
 require_once 'CardDonationPayment.php';
 require_once 'CashDonationPayment.php';
 require_once 'Donation.php';
+require_once 'IMoneyDonationState.php';
+require_once 'MoneypendingState.php';
 
 class MoneyDonation extends Donation {
     protected IDonationPaymentStrategy $donationMethod;
     private float $minAmount = 10.0;
     private $cash;
+    protected IMoneyDonationState $state;
 
     public function __construct($DonateID = 0 , $donationtype = 'Money', $cashamount = 0, $status = 'Pending', $isDeleted = false,) {
         parent::__construct(donateID: $DonateID, donationtype:$donationtype,status:$status);
         $this->dbProxy = new DBProxy('user');
         $this->cash=$cashamount;
+        $this->state = new MoneypendingState(); 
     }
 
     public function getCashAmount(): ?float {
@@ -22,6 +26,10 @@ class MoneyDonation extends Donation {
 
     public function setCashAmount($cashamount): void {
             $this->cash = $cashamount;
+    }
+
+    public function SetState($state){
+        $this->state=$state;
     }
 
     public function validate($data): bool {
@@ -60,6 +68,17 @@ class MoneyDonation extends Donation {
         }
 
         return $this->donationMethod->processPayment($details);
+    }
+  /*State Function for State DP*/
+    public function ProcessDonation(): void{
+        $this->state->ProsscingDonation($this);
+    }
+
+    public function CompleteDonation(){
+       
+        $this->state->NextState($this);
+        $this->ProcessDonation();
+        
     }
 
 }
