@@ -67,21 +67,16 @@ class MedicalDonation extends Donation {
         ];
     }
 
-   
-    
-
     public function getMedicalItems(): array {
         return $this->medicalItems;
     }
 
     public function setMedicalItems(array $medicalItems): void {
         foreach ($medicalItems as $item) {
-            
-    
+
             $MedicalName = $item['medicalname'];
             $MedicalType=$item['medicaltype'];
             $quantity = $item['quantity'];
-    
     
             if (!is_int($quantity) || $quantity <= 0) {
                 throw new Exception("Invalid quantity. Must be a positive integer.");
@@ -148,6 +143,7 @@ class MedicalDonation extends Donation {
         }
         return true;
     }
+
     /*State Function for State DP*/
     public function ProcessDonation(): void{
         $this->state->ProsscingDonation($this);
@@ -166,6 +162,14 @@ class MedicalDonation extends Donation {
         $this->donationMethod = new InKindDonationPayment();
 
         return $this->donationMethod->processPayment($DonatoinMedical);
+    }
+
+    //Template Function
+    public function calculatePayment($paymentMethod, $details, $donationSessionID){
+        $this->donationMethod = new InKindDonationPayment();
+
+        $totaldata = $this->donationMethod->calculations($details);
+        $this->saveState('Totaldata', $totaldata, $donationSessionID);
     }
 
     

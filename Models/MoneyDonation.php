@@ -13,7 +13,7 @@ class MoneyDonation extends Donation {
     private $cash;
     protected IMoneyDonationState $state;
 
-    public function __construct($DonateID = 0 , $donationtype = 'Money', $cashamount = 0, $status = 'Pending', $isDeleted = false,) {
+    public function __construct($DonateID = 0 , $cashamount = 0, $status = 'Pending', $isDeleted = false, $donationtype = 'Money') {
         parent::__construct(donateID: $DonateID, donationtype:$donationtype,status:$status);
         $this->dbProxy = new DBProxy('user');
         $this->cash=$cashamount;
@@ -69,7 +69,8 @@ class MoneyDonation extends Donation {
 
         return $this->donationMethod->processPayment($details);
     }
-  /*State Function for State DP*/
+
+    /*State Function for State DP*/
     public function ProcessDonation(): void{
         $this->state->ProsscingDonation($this);
     }
@@ -77,9 +78,21 @@ class MoneyDonation extends Donation {
     public function CompleteDonation(){
        
         $this->state->NextState($this);
-        $this->ProcessDonation();
-        
+        $this->ProcessDonation();  
     }
 
+    //Template Function
+    public function calculatePayment($paymentMethod, $details, $donationSessionID){
+        if(strtolower($paymentMethod) == 'cash'){
+            $this->donationMethod = new CashDonationPayment();
+        }elseif(strtolower($paymentMethod) == 'card'){
+            $this->donationMethod = new CardDonationPayment();
+        }elseif(strtolower($paymentMethod) == 'ewallet'){
+            $this->donationMethod = new EWalletDonationPayment();
+        }
+
+        $totaldata = $this->donationMethod->calculations($details);
+        $this->saveState('Totaldata', $totaldata, $donationSessionID);
+    }
 }
 ?>
