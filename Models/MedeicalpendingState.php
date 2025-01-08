@@ -1,9 +1,8 @@
 <?php
-require_once __DIR__ . '/../DB-creation/IDatabase.php';
-require_once __DIR__ . '/../DB-creation/DBProxy.php';
 require_once 'MedicalDonation.php';
 require_once "IMedicalDonationState.php";
 require_once "Medical.php";
+require_once 'MedeicalDoneState.php';
 class MedicalpendingState implements IMedicalDonationState{
     public function ProsscingDonation(MedicalDonation $donation): void{
         $MedicalItems=$donation->getMedicalItems();
@@ -17,7 +16,6 @@ class MedicalpendingState implements IMedicalDonationState{
     }
             $medical=new Medical();
             $Medicalname=$item['medicalname'];
-            echo $Medicalname; echo"\n";
             $Medicaltype=$item['medicaltype'];
             $quantity=$item['quantity'];
             if($medical->FindByName($Medicalname)){
