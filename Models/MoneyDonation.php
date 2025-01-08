@@ -1,42 +1,48 @@
 <?php
+require_once 'Donation.php';
+
 class MoneyDonation extends Donation {
     private float $minAmount = 10.0;
+    private $cash;
 
-    public function __construct(IDonationMethodStrategy $donationMethod, ?float $cashAmount = null) {
-        // Pass the donation method, type, and cash amount to the parent constructor
-        parent::__construct($donationMethod, DonationType::Money, $cashAmount);
-
-        // Validate the cash amount if provided
-        if ($cashAmount !== null) {
-            $this->validateAmount($cashAmount);
-        }
+    public function __construct($DonateID = 0 , $donationtype = 'Money', $cashamount = 0, $status = 'Pending', $isDeleted = false,) {
+        parent::__construct(donateID: $DonateID, donationtype:$donationtype,status:$status);
+        $this->dbProxy = new DBProxy('user');
+        $this->cash=$cashamount;
     }
 
-    /**
-     * Validate the donation amount.
-     * 
-     * @param float $amount The amount to validate.
-     * @return bool True if valid.
-     * @throws Exception If the amount is below the minimum.
-     */
-    public function validateAmount(float $amount): bool {
-        if ($amount < $this->minAmount) {
+    public function getCashAmount(): ?float {
+        return $this->cash;
+    }
+
+    public function setCashAmount($cashamount): void {
+            $this->cash = $cashamount;
+    }
+
+    public function validate($data): bool {
+        if ($data < $this->minAmount) {
             throw new Exception("The donation amount must be at least $" . $this->minAmount);
+            return false;
         }
         return true;
     }
 
-    /**
-     * Process the money donation.
-     * 
-     * @param float $amount The amount to donate.
-     * @param int $quantity Not used in money donations but retained for consistency.
-     * @param string $itemDescription Not used in money donations but retained for consistency.
-     */
-    public function process(float $amount, int $quantity, string $itemDescription): void {
-        $this->validateAmount($amount); // Validate before processing
-        parent::process($amount, $quantity, $itemDescription); // Call parent logic
+    public function createMoneyDonation(){
+        if($this->validate($this->cash)){
+            return $this->createDonation();
+        }
+        return false;
     }
-}
 
-    ?>
+    public function updateCashAmount(){
+        $query = "UPDATE DONATION Set CashAmount = ? WHERE ID = ?";
+        $stmt = $this->dbProxy->prepare($query, [$this->cash , $this->getDonationId()]);
+
+        if ($stmt) {
+            return true;
+        }
+        return false;
+    }
+
+}
+?>
