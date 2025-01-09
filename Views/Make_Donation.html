@@ -11,25 +11,23 @@
         <header>
             <h1>Make a Donation</h1>
         </header>
-        
 
-        
         <section class="donation-options">
             <h2>Select Donation Type</h2>
             <form id="donation-form">
-                <div class="radio-group">
+                <div class="checkbox-group">
                     <label>
-                        <input type="radio" name="donation-type" value="money" checked>
+                        <input type="checkbox" name="donation-type" value="money" id="money-checkbox">
                         Money Donation
                     </label>
                     <label>
-                        <input type="radio" name="donation-type" value="medical">
+                        <input type="checkbox" name="donation-type" value="medical" id="medical-checkbox">
                         Medical Donation
                     </label>
                 </div>
 
                 <!-- Money Donation Section -->
-                <div id="money-donation-section">
+                <div id="money-donation-section" style="display: none;">
                     <div class="form-group">
                         <label for="money-amount">Amount ($):</label>
                         <input type="number" id="money-amount" class="input-field" placeholder="Enter amount">
@@ -50,10 +48,6 @@
                         <label for="medical-quantity">Quantity:</label>
                         <input type="number" id="medical-quantity" class="input-field" placeholder="Enter quantity">
                     </div>
-                    <div class="form-group">
-                        <label for="expiration-date">Expiration Date:</label>
-                        <input type="date" id="expiration-date" class="input-field">
-                    </div>
                 </div>
 
                 <button type="submit" class="donate-button">Submit Donation</button>
@@ -62,20 +56,18 @@
     </div>
 
     <script>
-        // Toggle between donation types
-        document.querySelectorAll('input[name="donation-type"]').forEach(radio => {
-            radio.addEventListener('change', (event) => {
-                const moneySection = document.getElementById('money-donation-section');
-                const medicalSection = document.getElementById('medical-donation-section');
-                
-                if (event.target.value === 'money') {
-                    moneySection.style.display = 'block';
-                    medicalSection.style.display = 'none';
-                } else {
-                    moneySection.style.display = 'none';
-                    medicalSection.style.display = 'block';
-                }
-            });
+        // Toggle display for donation sections
+        const moneyCheckbox = document.getElementById('money-checkbox');
+        const medicalCheckbox = document.getElementById('medical-checkbox');
+        const moneySection = document.getElementById('money-donation-section');
+        const medicalSection = document.getElementById('medical-donation-section');
+
+        moneyCheckbox.addEventListener('change', () => {
+            moneySection.style.display = moneyCheckbox.checked ? 'block' : 'none';
+        });
+
+        medicalCheckbox.addEventListener('change', () => {
+            medicalSection.style.display = medicalCheckbox.checked ? 'block' : 'none';
         });
     </script>
 </body>
