@@ -14,21 +14,20 @@
         <section class="donations">
             <h2>Previous Donations</h2>
             <ul id="donations-list">
-                <!--  dynamic content will be injected here -->
-                <li>Donation #1: $500 for Child Education</li>
-                <li>Donation #2: $300 for Community Health</li>
-                <li>Donation #3: $200 for Environmental Clean-Up</li>
+                <li><a href="Donation_Details.html?id=1">Donation #1: $500 for Child Education</a></li>
+                <li><a href="Donation_Details.html?id=2">Donation #2: $300 for Community Health</a></li>
+                <li><a href="Donation_Details.html?id=3">Donation #3: $200 for Environmental Clean-Up</a></li>
             </ul>
         </section>
         <button class="donate-button" onclick="location.href='Make_Donation.html'">Make a Donation</button>
     </div>
 
+    <!-- Corner Button -->
+    <a href="display.php" class="corner-button">Profile Page</a>
+
     <script>
         // Example preparation for dynamic data insertion
         document.addEventListener("DOMContentLoaded", () => {
-            // Placeholder for fetching data dynamically
-            // Controller should call a function to populate 'donations-list'
-            // Example: Fetching donations (to be replaced with actual controller logic)
             const donations = [
                 { id: 1, amount: "$500", cause: "Child Education" },
                 { id: 2, amount: "$300", cause: "Community Health" },
@@ -38,7 +37,6 @@
             const donationsList = document.getElementById("donations-list");
             donationsList.innerHTML = ""; 
 
-            
             donations.forEach(donation => {
                 const listItem = document.createElement("li");
                 listItem.textContent = `Donation #${donation.id}: ${donation.amount} for ${donation.cause}`;
