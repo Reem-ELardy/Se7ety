@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Home Page</title>
+    <link rel="stylesheet" href="style_Home.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Welcome to Se7ety</h1>
+        </header>
+        <section class="donations">
+            <h2>Previous Donations</h2>
+            <ul id="donations-list">
+                <li><a href="Donation_Details.html?id=1">Donation #1: $500 for Child Education</a></li>
+                <li><a href="Donation_Details.html?id=2">Donation #2: $300 for Community Health</a></li>
+                <li><a href="Donation_Details.html?id=3">Donation #3: $200 for Environmental Clean-Up</a></li>
+            </ul>
+        </section>
+        <button class="donate-button" onclick="location.href='Make_Donation.html'">Make a Donation</button>
+    </div>
+
+    <!-- Corner Button -->
+    <a href="display.php" class="corner-button">Profile Page</a>
+
+    <script>
+        // Example preparation for dynamic data insertion
+        document.addEventListener("DOMContentLoaded", () => {
+            const donations = [
+                { id: 1, amount: "$500", cause: "Child Education" },
+                { id: 2, amount: "$300", cause: "Community Health" },
+                { id: 3, amount: "$200", cause: "Environmental Clean-Up" },
+            ];
+
+            const donationsList = document.getElementById("donations-list");
+            donationsList.innerHTML = ""; 
+
+            donations.forEach(donation => {
+                const listItem = document.createElement("li");
+                listItem.textContent = `Donation #${donation.id}: ${donation.amount} for ${donation.cause}`;
+                donationsList.appendChild(listItem);
+            });
+        });
+    </script>
+</body>
+</html>
