@@ -19,6 +19,10 @@ class CashDonationPayment implements IDonationPaymentStrategy {
             return ($details + $details * $this->cahshTax);
         }
     }
+
+    public function getType() {
+        return 'Cash';
+    }
 }
 
 ?>

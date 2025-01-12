@@ -20,6 +20,10 @@ class EWalletDonationPayment implements IDonationPaymentStrategy {
     public function processPayment($details){
         return ($details + $details * $this->EwalletTax);
     }
+
+    public function getType() {
+        return 'Ewallet';
+    }
 }
 
 ?>

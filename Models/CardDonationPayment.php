@@ -38,6 +38,10 @@ class CardDonationPayment implements IDonationPaymentStrategy {
 
         return false;
     }
+
+    public function getType() {
+        return 'Card';
+    }
 }
 
 ?>

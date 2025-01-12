@@ -29,6 +29,10 @@ class InKindDonationPayment implements IDonationPaymentStrategy {
         ];
         return $data;
     }
+
+    public function getType() {
+        return 'InKind';
+    }
 }
 
 ?>
