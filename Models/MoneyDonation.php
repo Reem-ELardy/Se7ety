@@ -32,6 +32,23 @@ class MoneyDonation extends Donation {
         $this->state=$state;
     }
 
+    public function setPaymentMethod($paymentMethod){
+        if(strtolower($paymentMethod) == 'cash'){
+            $this->donationMethod = new CashDonationPayment();
+        }elseif(strtolower($paymentMethod) == 'card'){
+            $this->donationMethod = new CardDonationPayment();
+        }elseif(strtolower($paymentMethod) == 'ewallet'){
+            $this->donationMethod = new EWalletDonationPayment();
+        }
+    }
+
+    public function getPaymentMethod() {
+        if ($this->donationMethod) {
+            return $this->donationMethod->getType();
+        }
+        return null;
+    }
+
     public function validate($data): bool {
         if ($data < $this->minAmount) {
             throw new Exception("The donation amount must be at least $" . $this->minAmount);
@@ -82,17 +99,9 @@ class MoneyDonation extends Donation {
     }
 
     //Template Function
-    public function calculatePayment($paymentMethod, $details, $donationSessionID){
-        if(strtolower($paymentMethod) == 'cash'){
-            $this->donationMethod = new CashDonationPayment();
-        }elseif(strtolower($paymentMethod) == 'card'){
-            $this->donationMethod = new CardDonationPayment();
-        }elseif(strtolower($paymentMethod) == 'ewallet'){
-            $this->donationMethod = new EWalletDonationPayment();
-        }
-
+    public function calculatePayment($details){
         $totaldata = $this->donationMethod->calculations($details);
-        $this->saveState('Totaldata', $totaldata, $donationSessionID);
+        return $totaldata;
     }
 }
 ?>

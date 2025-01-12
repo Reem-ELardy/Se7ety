@@ -95,7 +95,6 @@ abstract class Donation {
                 $donation['donation_step'] = 'Validation Failed';
                 return;
             }
-            // $this->validate($details);
             $this->createDonation();
             $this->ProcessDonation();
             $donation['donation_step'] = 'PaymentMethod';
@@ -103,14 +102,14 @@ abstract class Donation {
         }
     
         if ($donation['donation_step'] === 'PaymentMethod') {
-            $paymentMethod = $this->getState('Method', $donation_id);
-            $this->CalculatePayment($paymentMethod, $details, $donation_id);
+            $totaldata = $this->CalculatePayment($details);
+            $this->saveState('Totaldata', $totaldata, $donation_id);
             $donation['donation_step'] = 'payment_done';
             return;
         }
     
         if ($donation['donation_step'] === 'payment_done') {
-            $paymentMethod = $donation['Method'];
+            $paymentMethod = $this->getPaymentMethod();
             echo $paymentMethod;
             if (strtolower($paymentMethod) != 'cash' && strtolower($paymentMethod) != 'inkind') {
                 $PaymentDetails = $this->getState('PaymentDetails', $donation_id);
@@ -128,7 +127,7 @@ abstract class Donation {
     
     
     abstract protected function validate($data);
-    abstract protected function CalculatePayment($paymentMethod, $details, $donationSessionID);
+    abstract protected function CalculatePayment($details);
     protected function saveState($key, $value, $donationSessionID) {
         $donation = &$_SESSION['donations'][$donationSessionID];
         $donation[$key] = $value;
@@ -137,6 +136,9 @@ abstract class Donation {
         $donation = &$_SESSION['donations'][$donation_id];
         return $donation[$key];
     }
+
+    abstract public function setPaymentMethod($paymentMethod);
+    abstract public function getPaymentMethod();
 
     //Payment Funcion used for strategy
     abstract protected function Payment($paymentMethod, $PaymentDetails, $details);

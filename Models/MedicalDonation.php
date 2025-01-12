@@ -45,6 +45,14 @@ class MedicalDonation extends Donation {
     public function SetState($state){
         $this->state=$state;
     }
+
+    public function setPaymentMethod($paymentMethod = null){
+        $this->donationMethod = new InKindDonationPayment();
+    }
+
+    public function getPaymentMethod(){
+        return $this->donationMethod->getType();
+    }
   
     public function addToMedicalItems( $MedicalName,  $MedicalType,  $quantity): void {
         if ($quantity < 0) {
@@ -165,11 +173,9 @@ class MedicalDonation extends Donation {
     }
 
     //Template Function
-    public function calculatePayment($paymentMethod, $details, $donationSessionID){
-        $this->donationMethod = new InKindDonationPayment();
-
+    public function calculatePayment($details){
         $totaldata = $this->donationMethod->calculations($details);
-        $this->saveState('Totaldata', $totaldata, $donationSessionID);
+        return $totaldata;
     }
 
     
