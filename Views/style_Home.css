@@ -140,3 +140,22 @@ header h1 {
 .corner-button:hover {
   background-color: #0056b3;
 }
+
+
+/* Additional styles for the Back button */
+.back-button {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  padding: 10px 15px;
+  background-color: #007bff;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  font-size: 16px;
+  text-decoration: none;
+  cursor: pointer;
+}
+.back-button:hover {
+  background-color: #0056b3;
+}
