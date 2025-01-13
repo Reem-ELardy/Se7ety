@@ -28,6 +28,7 @@
 
                 <!-- Money Donation Section -->
                 <div id="money-donation-section" style="display: none;">
+                    <h3>Money Donation</h3>
                     <div class="form-group">
                         <label for="money-amount">Amount ($):</label>
                         <input type="number" id="money-amount" class="input-field" placeholder="Enter amount">
@@ -36,18 +37,24 @@
 
                 <!-- Medical Donation Section -->
                 <div id="medical-donation-section" style="display: none;">
-                    <div class="form-group">
-                        <label for="medical-name">Name:</label>
-                        <input type="text" id="medical-name" class="input-field" placeholder="Enter name">
+                    <div id="medical-donation-list">
+                        <div class="medical-donation-item">
+                            <h3>Medical Donation 1</h3>
+                            <div class="form-group">
+                                <label for="medical-name">Name:</label>
+                                <input type="text" name="medical-name[]" class="input-field" placeholder="Enter name">
+                            </div>
+                            <div class="form-group">
+                                <label for="medical-type">Type:</label>
+                                <input type="text" name="medical-type[]" class="input-field" placeholder="Enter type">
+                            </div>
+                            <div class="form-group">
+                                <label for="medical-quantity">Quantity:</label>
+                                <input type="number" name="medical-quantity[]" class="input-field" placeholder="Enter quantity">
+                            </div>
+                        </div>
                     </div>
-                    <div class="form-group">
-                        <label for="medical-type">Type:</label>
-                        <input type="text" id="medical-type" class="input-field" placeholder="Enter type">
-                    </div>
-                    <div class="form-group">
-                        <label for="medical-quantity">Quantity:</label>
-                        <input type="number" id="medical-quantity" class="input-field" placeholder="Enter quantity">
-                    </div>
+                    <button type="button" id="add-medical-donation" class="donate-button">Add Another Medical Donation</button>
                 </div>
 
                 <button type="submit" class="donate-button">Submit Donation</button>
@@ -68,6 +75,34 @@
 
         medicalCheckbox.addEventListener('change', () => {
             medicalSection.style.display = medicalCheckbox.checked ? 'block' : 'none';
+        });
+
+        // Add dynamic medical donation fields with titles
+        const addMedicalDonationButton = document.getElementById('add-medical-donation');
+        const medicalDonationList = document.getElementById('medical-donation-list');
+        let medicalDonationCount = 1; // Counter for medical donations
+
+        addMedicalDonationButton.addEventListener('click', () => {
+            medicalDonationCount++; // Increment the counter
+
+            const newDonationItem = document.createElement('div');
+            newDonationItem.classList.add('medical-donation-item');
+            newDonationItem.innerHTML = `
+                <h3>Medical Donation ${medicalDonationCount}</h3>
+                <div class="form-group">
+                    <label for="medical-name">Name:</label>
+                    <input type="text" name="medical-name[]" class="input-field" placeholder="Enter name">
+                </div>
+                <div class="form-group">
+                    <label for="medical-type">Type:</label>
+                    <input type="text" name="medical-type[]" class="input-field" placeholder="Enter type">
+                </div>
+                <div class="form-group">
+                    <label for="medical-quantity">Quantity:</label>
+                    <input type="number" name="medical-quantity[]" class="input-field" placeholder="Enter quantity">
+                </div>
+            `;
+            medicalDonationList.appendChild(newDonationItem);
         });
     </script>
 </body>
