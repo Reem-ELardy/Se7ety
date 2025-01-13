@@ -1,11 +1,16 @@
 <?php
-require_once 'DB-Connection.php';
+require_once __DIR__ . '/../DB-creation/IDatabase.php';
+require_once __DIR__ . '/../DB-creation/DBProxy.php';
+
 abstract class Receipt {
     private ?int $id = null;
     private int $donateId;
     private Donate $donate;
+    private $dbProxy;
+
 
     public function __construct(int $donateId, ?int $id = null) {
+        $this->dbProxy = new DBProxy('user');
         $this->donateId = $donateId;
         $this->id = $id;
     }
@@ -28,76 +33,41 @@ abstract class Receipt {
     
    
     public function createReceipt(): bool {
-        $conn = DBConnection::getInstance()->getConnection();
-
         $query = "INSERT INTO Receipt (DonateID) VALUES (?)";
-        $stmt = $conn->prepare($query);
+        $stmt = $this->dbProxy->prepare($query, [$this->donateId]);
 
-        if (!$stmt) {
-            throw new Exception("Prepare failed: " . $conn->error);
+        if ($stmt) {
+            $this->id = $this->dbProxy->getInsertId();
+            return true;
         }
 
-        $stmt->bind_param("i", $this->donateId);
-        $result = $stmt->execute();
-
-        if ($result) {
-            $this->id = $conn->insert_id;
-        } else {
-            throw new Exception("Execute failed: " . $stmt->error);
-        }
-
-        $stmt->close();
-        return $result;
+        return false;;
     }
 
-    public static function readReceipt(int $id): ?Receipt {
-        $conn = DBConnection::getInstance()->getConnection();
-
+    public function readReceipt(int $id){
         $query = "SELECT * FROM Receipt WHERE ID = ?";
-        $stmt = $conn->prepare($query);
+        $stmt = $this->dbProxy->prepare($query, [$id]);
 
-        if (!$stmt) {
-            throw new Exception("Prepare failed: " . $conn->error);
+        if ($stmt) {
+            $stmt->bind_result($this->id, $this->donateId);
+            return true;
         }
 
-        $stmt->bind_param("i", $id);
-        $stmt->execute();
-
-        $result = $stmt->get_result();
-        if ($row = $result->fetch_assoc()) {
-            return new Receipt(
-                (int) $row['DonateID'],
-                (int) $row['ID']
-            );
-        }
-
-        $stmt->close();
-        return null;
+        return false;
     }
- 
+
     public function updateReceipt(): bool {
         if (!$this->id) {
             throw new Exception("Cannot update a record without an ID.");
         }
-
-        $conn = DBConnection::getInstance()->getConnection();
-
         $query = "UPDATE Receipt SET DonateID = ? WHERE ID = ?";
-        $stmt = $conn->prepare($query);
+        $stmt = $this->dbProxy->prepare($query, [ $this->donateId, $this->id]);
 
         if (!$stmt) {
-            throw new Exception("Prepare failed: " . $conn->error);
+            return false;
         }
 
-        $stmt->bind_param("ii", $this->donateId, $this->id);
-        $result = $stmt->execute();
-
-        if (!$result) {
-            throw new Exception("Execute failed: " . $stmt->error);
-        }
-
-        $stmt->close();
-        return $result;
+        return true;
     }
 
 
@@ -106,24 +76,14 @@ abstract class Receipt {
             throw new Exception("Cannot delete a record without an ID.");
         }
 
-        $conn = DBConnection::getInstance()->getConnection();
-
         $query = "DELETE FROM Receipt WHERE ID = ?";
-        $stmt = $conn->prepare($query);
+        $stmt = $this->dbProxy->prepare($query, [$this->id]);
 
         if (!$stmt) {
-            throw new Exception("Prepare failed: " . $conn->error);
+            return false;
         }
 
-        $stmt->bind_param("i", $this->id);
-        $result = $stmt->execute();
-
-        if (!$result) {
-            throw new Exception("Execute failed: " . $stmt->error);
-        }
-
-        $stmt->close();
-        return $result;
+        return true;
     }
 }
 
