@@ -8,6 +8,16 @@ class Certificate {
     private int $volunteerID;
     private int $eventID;
 
+    public function __construct(int $eventID, int $volunteerID) {
+        $this->eventID = $eventID;
+        $this->volunteerID = $volunteerID;
+
+        if ($eventID != 0 && $volunteerID != 0) {
+            $this->fetchEventDetails($eventID);
+            $this->fetchVolunteerName($volunteerID);
+        }
+    }
+    
 
     public function setvolunteerID(int $volunteerID) {
         $this->volunteerID = $volunteerID;
@@ -57,7 +67,7 @@ class Certificate {
         return $this->Volunteer_Name;
     }
 
-    public function createCertificate(int $volunteerID, int $eventID) {
+    public function createCertificate() {
         $conn = DBConnection::getInstance()->getConnection();
         $query = "INSERT INTO Certificate (VolunteerID, EventID, IsDeleted) VALUES (?, ?, 0)";
         $stmt = $conn->prepare($query);
@@ -65,32 +75,37 @@ class Certificate {
             return false;
         }
 
-        $stmt->bind_param("ii", $volunteerID, $eventID);
+        $stmt->bind_param("ii", $this->volunteerID, $this->eventID);
         $result = $stmt->execute();
-        $stmt->close();
-
-        return $result;
-    }
-
-    public function updateCertificate(int $volunteerID, int $eventID){
-        $conn = DBConnection::getInstance()->getConnection();
-
-        $query = "UPDATE Certificate SET VolunteerID = ?, EventID = ? WHERE ID = ?";
-        $stmt = $conn->prepare($query);
-        if (!$stmt) {
-            return false;
+        if ($result) {
+            $this->ID = $conn->insert_id;
         }
 
-        $id = $this->getID();
-
-        $stmt->bind_param("iii", $volunteerID, $eventID, $id);
-        $result = $stmt->execute();
         $stmt->close();
+        return $result;
 
         return $result;
     }
 
-    public function readCertificate(int $id): ?Certificate {
+    // public function updateCertificate(int $volunteerID, int $eventID){
+    //     $conn = DBConnection::getInstance()->getConnection();
+
+    //     $query = "UPDATE Certificate SET VolunteerID = ?, EventID = ? WHERE ID = ?";
+    //     $stmt = $conn->prepare($query);
+    //     if (!$stmt) {
+    //         return false;
+    //     }
+
+    //     $id = $this->getID();
+
+    //     $stmt->bind_param("iii", $volunteerID, $eventID, $id);
+    //     $result = $stmt->execute();
+    //     $stmt->close();
+
+    //     return $result;
+    // }
+
+    public function readCertificate(int $id): bool {
         $conn = DBConnection::getInstance()->getConnection();
 
         $query = "SELECT VolunteerID, EventID FROM Certificate WHERE ID = ? AND IsDeleted = 0";
@@ -105,40 +120,39 @@ class Certificate {
         $stmt->fetch();
 
         if ($this->volunteerID && $this->eventID) {
-            $this->setID($id);
-            $this->setvolunteerID($this->volunteerID); 
-            $this->seteventID($this->eventID);         
+            $this->ID = $id;
+            $this->fetchEventDetails($this->eventID);
+            $this->fetchVolunteerName($this->volunteerID);         
             $stmt->close();
-            return $this;
+            return true;
         }
 
         $stmt->close();
-        return null;
+        return false;
     }
 
-    public function getCertificatesByVolunteerId(int $volunteerId): ?array {
-        $conn = DBConnection::getInstance()->getConnection();
-        $sql = "SELECT * FROM Certificate WHERE VolunteerID = ? AND IsDeleted = 0";
-        $stmt = $conn->prepare($sql);
+    // public function getCertificatesByVolunteerId(int $volunteerId): ?array {
+    //     $conn = DBConnection::getInstance()->getConnection();
+    //     $sql = "SELECT * FROM Certificate WHERE VolunteerID = ? AND IsDeleted = 0";
+    //     $stmt = $conn->prepare($sql);
 
-        if ($stmt) {
-            $stmt->bind_param('i', $volunteerId);
-            if ($stmt->execute()) {
-                $result = $stmt->get_result();
-                $certificates = [];
-                while ($row = $result->fetch_assoc()) {
-                    $certificates[] = $row;
-                }
-                $stmt->close();
-                return $certificates;
-            }
-            $stmt->close();
-        }
+    //     if ($stmt) {
+    //         $stmt->bind_param('i', $volunteerId);
+    //         if ($stmt->execute()) {
+    //             $result = $stmt->get_result();
+    //             $certificates = [];
+    //             while ($row = $result->fetch_assoc()) {
+    //                 $certificates[] = $row;
+    //             }
+    //             $stmt->close();
+    //             return $certificates;
+    //         }
+    //         $stmt->close();
+    //     }
 
-        return null;
-    }
+    //     return null;
+    // }
 
-    // Function to delete a certificate record (soft delete)
     public function deleteCertificate(): bool {
         $conn = DBConnection::getInstance()->getConnection();
 
@@ -154,6 +168,46 @@ class Certificate {
         $stmt->close();
 
         return $result;
+    }
+
+    private function fetchEventDetails(int $eventID): void {
+        $conn = DBConnection::getInstance()->getConnection();
+
+        $query = "SELECT Name, Date FROM Event WHERE ID = ?";
+        $stmt = $conn->prepare($query);
+        $eventDate = '';
+        if ($stmt) {
+            $stmt->bind_param("i", $eventID);
+            $stmt->execute();
+            $stmt->bind_result($this->Event_Name, $eventDate);
+
+            if ($stmt->fetch()) {
+                $this->Event_Date = new DateTime($eventDate);  
+            }
+
+            $stmt->close();
+        }
+    }
+
+    private function fetchVolunteerName(int $volunteerID): void {
+        $conn = DBConnection::getInstance()->getConnection();
+
+        $query = "SELECT CONCAT_WS(' ', Person.FirstName, Person.LastName) 
+                    FROM Volunteer 
+                    JOIN Person ON Volunteer.PersonID = Person.ID 
+                    WHERE Volunteer.ID = ?";
+        $stmt = $conn->prepare($query);
+        if ($stmt) {
+            $stmt->bind_param("i", $volunteerID);
+            $stmt->execute();
+            $stmt->bind_result($this->Volunteer_Name);
+
+            if ($stmt->fetch()) {
+                // Volunteer name is now set in the class
+            }
+
+            $stmt->close();
+        }
     }
 
 }

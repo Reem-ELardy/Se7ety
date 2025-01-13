@@ -3,7 +3,8 @@
 require_once "Event.php";
 
 interface Observer {
-    public function update(int $id, string $name, string $location, DateTime $date_time, string $description);
+    public function getId();
+    public function update(int $id, string $name, int $locationId, DateTime $date_time, string $description);
 }
 
 
@@ -13,8 +14,14 @@ class Notification implements Observer {
     private string $message;
     private bool $sent;
 
+    public function __construct(int $receiverId, string $message) {
+        $this->recieverId = $receiverId;
+        $this->message = $message;
+        $this->sent = false;
+    }
+
      // Getter and Setter for Id
-     public function getId(): int {
+    public function getId(): int {
         return $this->id;
     }
 
@@ -48,16 +55,17 @@ class Notification implements Observer {
     public function setSent(bool $sent): void {
         $this->sent = $sent;
     }
+
     public function update(
         int $notificationId,
         string $name,
-        string $location,
+        int $locationId,
         DateTime $date_time,
         string $description
     ): bool {
         $conn = DBConnection::getInstance()->getConnection();
         // Update the message in the class property
-        $this->message = "Event Update: $name at $location on " . $date_time->format('Y-m-d H:i:s') . 
+        $this->message = "Event Update: $name at $locationId on " . $date_time->format('Y-m-d H:i:s') . 
                          ". Description: $description.";
     
         // SQL query to update the message and time in the database
@@ -82,14 +90,17 @@ class Notification implements Observer {
     }
     
 
-    public function createNotification(int $receiverId, string $message): bool {
+    public function createNotification(): bool {
         $conn = DBConnection::getInstance()->getConnection();
         $sql = "INSERT INTO Notification (ReceiverID, Message, Sent) VALUES (?, ?, 0)";
         $stmt = $conn->prepare($sql);
 
         if ($stmt) {
-            $stmt->bind_param('is', $receiverId, $message);
+            $stmt->bind_param('is', $this->recieverId, $this->message);
             $result = $stmt->execute();
+            if ($result) {
+                $this->id = $conn->insert_id;
+            }
             $stmt->close();
             return $result;
         }
@@ -97,26 +108,28 @@ class Notification implements Observer {
         return false;
     }
 
+
     public function deleteNotification(int $notificationId): bool {
         $conn = DBConnection::getInstance()->getConnection();
-        $sql = "DELETE FROM Notification WHERE ID = ?";
+        $sql = "UPDATE Notification SET IsDeleted = 1 WHERE ID = ?";
         $stmt = $conn->prepare($sql);
-
+    
         if ($stmt) {
             $stmt->bind_param('i', $notificationId);
             $result = $stmt->execute();
             $stmt->close();
             return $result;
         }
-
+    
         return false;
     }
+    
 
     public function getNotificationsByReceiverId(int $receiverId): ?array {
         $conn = DBConnection::getInstance()->getConnection();
-        $sql = "SELECT * FROM Notification WHERE ReceiverID = ? AND Sent = 0 ORDER BY CreatedAt DESC";
+        $sql = "SELECT * FROM Notification WHERE ReceiverID = ? AND Sent = 0 AND IsDeleted = 0 ORDER BY CreatedAt DESC";
         $stmt = $conn->prepare($sql);
-
+    
         if ($stmt) {
             $stmt->bind_param('i', $receiverId);
             if ($stmt->execute()) {
@@ -130,18 +143,54 @@ class Notification implements Observer {
             }
             $stmt->close();
         }
-
+    
         return null;
     }
+
+    public static function getNotificationById(int $id): ?Notification {
+        $conn = DBConnection::getInstance()->getConnection();
+        $stmt = $conn->prepare("
+            SELECT ID, ReceiverID, Message, Sent
+            FROM Notification
+            WHERE ID = ? AND IsDeleted = 0
+        ");
+        $stmt->bind_param('i', $id);
+        $stmt->execute();
+        $result = $stmt->get_result();
+    
+        if ($row = $result->fetch_assoc()) {
+            return new Notification(
+                $row['ID'],
+                $row['ReceiverID'],
+                $row['Message'],
+                (bool) $row['Sent']
+            );
+        }
+        
+        return null; 
+    }
+    
+    
 }
 
+
+
 class EventReminder implements Observer {
+    private int $id;
     private Subject $event;
     private string $reminderMessage;
 
     public function __construct(Subject $event) {
         $this->event = $event;
         $this->reminderMessage = "";
+    }
+
+    public function getId(): int {
+        return $this->id;
+    }
+
+    public function setId(int $id): void {
+        $this->id = $id;
     }
 
     // Setter for the event attribute
@@ -194,11 +243,11 @@ class EventReminder implements Observer {
     }
 
     // Method to update reminders for a specific event
-    public function update(int $eventId, string $name, string $location, DateTime $date_time, string $description): bool {
+    public function update(int $eventId, string $name, int $locationId, DateTime $date_time, string $description): bool {
 
         $conn = DBConnection::getInstance()->getConnection();
 
-        $updatedMessage = "Reminder: The event '$name' is scheduled at $location on " . 
+        $updatedMessage = "Reminder: The event '$name' is scheduled at $locationId on " . 
                           $date_time->format('Y-m-d H:i:s') . ". Description: $description.";
 
         $sql = "UPDATE EventReminder 
@@ -216,33 +265,60 @@ class EventReminder implements Observer {
         return false;
     }
 
-        // Method to get event reminders by event ID
-        public function getEventReminders(int $eventId): array {
+    public static function getEventReminderDataById(int $id): ?array {
+        $conn = DBConnection::getInstance()->getConnection();
+        $stmt = $conn->prepare("
+            SELECT ID, Message, ReminderDate
+            FROM EventReminder
+            WHERE ID = ? AND IsDeleted = 0
+        ");
+        $stmt->bind_param('i', $id);
+        $stmt->execute();
+        $result = $stmt->get_result();
+    
+        if ($row = $result->fetch_assoc()) {
+            return [
+                'id' => $row['ID'],
+                'message' => $row['Message'],
+                'reminderDate' => $row['ReminderDate']
+            ];
+        }
+    
+        return null;
+    }
 
-            $conn = DBConnection::getInstance()->getConnection();
-
-            $reminders = [];
-            $sql = "SELECT ID, Message, ReminderDate FROM EventReminder WHERE EventID = ? AND IsDeleted = 0";
-            $stmt = $conn->prepare($sql);
+    public function getEventReminders(int $eventId): array {
+        $conn = DBConnection::getInstance()->getConnection();
     
-            if ($stmt) {
-                $stmt->bind_param('i', $eventId);
-                $stmt->execute();
-                $stmt->bind_result($id, $message, $reminderDate);
+        $reminders = [];
+        $id = 0;
+        $message = '';
+        $reminderDate = '';
+        $sql = "SELECT ID, Message, ReminderDate FROM EventReminder WHERE EventID = ? AND IsDeleted = 0";
+        $stmt = $conn->prepare($sql);
     
-                while ($stmt->fetch()) {
-                    $reminders[] = [
-                        'id' => $id,
-                        'message' => $message,
-                        'reminderDate' => $reminderDate
-                    ];
-                }
+        if ($stmt) {
+            $stmt->bind_param('i', $eventId);
+            $stmt->execute();
     
-                $stmt->close();
+            // Bind the result columns to variables
+            $stmt->bind_result($id, $message, $reminderDate);
+    
+            // Fetch each row and store it in the reminders array
+            while ($stmt->fetch()) {
+                $reminders[] = [
+                    'id' => $id,
+                    'message' => $message,
+                    'reminderDate' => $reminderDate
+                ];
             }
     
-            return $reminders;
+            $stmt->close();
         }
+    
+        return $reminders;
+    }
+    
 }
 
 ?>
