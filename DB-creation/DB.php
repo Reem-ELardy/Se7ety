@@ -170,7 +170,7 @@ run_queries_create_DB(
             FOREIGN KEY (EventID) REFERENCES Event(ID)
         )",
 
-        "CREATE TABLE IF NOT EXISTS Notification (
+        "CREATE TABLE IF NOT EXISTS $dbname.Notification (
             ID INT PRIMARY KEY AUTO_INCREMENT,
             ReceiverID INT NOT NULL,
             Message TEXT NOT NULL,
@@ -189,7 +189,7 @@ run_queries_create_DB(
             FOREIGN KEY (EventID) REFERENCES Event(ID)
         )",
 
-        "CREATE TABLE IF NOT EXISTS Observer (
+        "CREATE TABLE IF NOT EXISTS $dbname.Observer (
             ID INT PRIMARY KEY AUTO_INCREMENT,
             EventID INT,
             Type TINYINT(1) NOT NULL, -- 0 for Notification, 1 for EventReminder
