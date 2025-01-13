@@ -79,6 +79,7 @@ run_queries_create_DB(
             DonorID INT,
             Date DATE,
             Time TIME,
+            Status ENUM('Pending', 'Done'),
             IsDeleted tinyint(1) NOT NULL DEFAULT 0,
             FOREIGN KEY (DonorID) REFERENCES Donor(ID) ON DELETE CASCADE
         )",
@@ -88,7 +89,6 @@ run_queries_create_DB(
             DonateID INT,
             Type ENUM('Medical', 'Money'),
             CashAmount DECIMAL(10, 2),
-            Status ENUM('Pending', 'Done'),
             IsDeleted tinyint(1) NOT NULL DEFAULT 0,
             FOREIGN KEY (DonateID) REFERENCES Donate(ID)
         )",
@@ -130,25 +130,20 @@ run_queries_create_DB(
             ID INT PRIMARY KEY AUTO_INCREMENT,
             Name VARCHAR(50),
             Date DATE,
+            Description TEXT,
             Type ENUM('Donation-Collect', 'Medical-Tour', 'Other'),
             TotalNoPatients INT,
             TotalNoVolunteers INT,
+            MaxNoOfAttendance INT,
             LocationID INT,
             IsDeleted tinyint(1) NOT NULL DEFAULT 0,
             FOREIGN KEY (LocationID) REFERENCES Address(ID)
         )",
 
-        "CREATE TABLE IF NOT EXISTS $dbname.VolunteerEvent (
-            EventID INT,
-            VolunteerID INT,
-            PRIMARY KEY (EventID, VolunteerID),
-            FOREIGN KEY (EventID) REFERENCES Event(ID),
-            FOREIGN KEY (VolunteerID) REFERENCES Volunteer(ID)
-        )",
-
         "CREATE TABLE IF NOT EXISTS $dbname.PatientEvent (
             EventID INT,
             PatientID INT,
+            IsDeleted tinyint(1) NOT NULL DEFAULT 0,
             PRIMARY KEY (EventID, PatientID),
             FOREIGN KEY (EventID) REFERENCES Event(ID),
             FOREIGN KEY (PatientID) REFERENCES Patient(ID)
@@ -161,6 +156,7 @@ run_queries_create_DB(
             Role VARCHAR(50),
             ParticipantHours INT,
             IsDeleted tinyint(1) NOT NULL DEFAULT 0,
+            IsCompleted tinyint(1) NOT NULL DEFAULT 0,
             FOREIGN KEY (VolunteerID) REFERENCES Volunteer(ID),
             FOREIGN KEY (EventID) REFERENCES Event(ID)
         )",
@@ -174,12 +170,13 @@ run_queries_create_DB(
             FOREIGN KEY (EventID) REFERENCES Event(ID)
         )",
 
-        "CREATE TABLE IF NOT EXISTS $dbname.Notification (
+        "CREATE TABLE IF NOT EXISTS Notification (
             ID INT PRIMARY KEY AUTO_INCREMENT,
             ReceiverID INT NOT NULL,
             Message TEXT NOT NULL,
             Sent TINYINT(1) NOT NULL DEFAULT 0,
             CreatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            IsDeleted TINYINT(1) NOT NULL DEFAULT 0,
             FOREIGN KEY (ReceiverID) REFERENCES Person(ID)
         )",
 
@@ -191,7 +188,15 @@ run_queries_create_DB(
             IsDeleted TINYINT(1) NOT NULL DEFAULT 0,
             FOREIGN KEY (EventID) REFERENCES Event(ID)
         )",
-        
+
+        "CREATE TABLE IF NOT EXISTS Observer (
+            ID INT PRIMARY KEY AUTO_INCREMENT,
+            EventID INT,
+            Type TINYINT(1) NOT NULL, -- 0 for Notification, 1 for EventReminder
+            ObserverID INT,
+            IsDeleted TINYINT(1) NOT NULL DEFAULT 0,
+            FOREIGN KEY (EventID) REFERENCES Event(ID)
+        )",
 
         "CREATE TABLE IF NOT EXISTS $dbname.Ticket (
             ID INT PRIMARY KEY AUTO_INCREMENT,
