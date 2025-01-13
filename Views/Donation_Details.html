@@ -17,22 +17,22 @@
             <p id="donation-info">Loading donation details...</p>
         </section>
 
-        <button onclick="location.href='Home_Page.html'" class="back-button">Back to Home</button>
+        <button onclick="location.href='Home.html'" class="back-button">Back to Home</button>
     </div>
 
     <script>
-        // Example donation data
+        
         const donations = {
             1: { amount: "$500", cause: "Child Education", description: "Support for school supplies." },
             2: { amount: "$300", cause: "Community Health", description: "Funds for health camps." },
             3: { amount: "$200", cause: "Environmental Clean-Up", description: "Supplies for clean-up drives." }
         };
 
-        // Extract donation ID from URL
+        
         const urlParams = new URLSearchParams(window.location.search);
         const donationId = urlParams.get("id");
 
-        // Populate donation details
+        
         const donationDetails = donations[donationId];
         const donationInfo = document.getElementById("donation-info");
 

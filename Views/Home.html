@@ -14,19 +14,17 @@
         <section class="donations">
             <h2>Previous Donations</h2>
             <ul id="donations-list">
-                <li><a href="Donation_Details.html?id=1">Donation #1: $500 for Child Education</a></li>
-                <li><a href="Donation_Details.html?id=2">Donation #2: $300 for Community Health</a></li>
-                <li><a href="Donation_Details.html?id=3">Donation #3: $200 for Environmental Clean-Up</a></li>
+                
             </ul>
         </section>
         <button class="donate-button" onclick="location.href='Make_Donation.html'">Make a Donation</button>
     </div>
 
-    <!-- Corner Button -->
+    
     <a href="display.php" class="corner-button">Profile Page</a>
 
     <script>
-        // Example preparation for dynamic data insertion
+        
         document.addEventListener("DOMContentLoaded", () => {
             const donations = [
                 { id: 1, amount: "$500", cause: "Child Education" },
@@ -39,8 +37,11 @@
 
             donations.forEach(donation => {
                 const listItem = document.createElement("li");
-                listItem.textContent = `Donation #${donation.id}: ${donation.amount} for ${donation.cause}`;
-                donationsList.appendChild(listItem);
+                const anchor = document.createElement("a");
+                anchor.href = `Donation_Details.html?id=${donation.id}`;
+                anchor.textContent = `Donation #${donation.id}: ${donation.amount} for ${donation.cause}`;
+                listItem.appendChild(anchor); // Add the anchor to the list item
+                donationsList.appendChild(listItem); // Add the list item to the list
             });
         });
     </script>

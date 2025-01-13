@@ -159,3 +159,20 @@ header h1 {
 .back-button:hover {
   background-color: #0056b3;
 }
+
+#donations-list a {
+  text-decoration: none; 
+  color: #007bff;
+  font-weight: bold; 
+  transition: color 0.3s ease; 
+}
+
+#donations-list a:hover {
+  color: #0056b3;
+  text-decoration: underline; 
+}
+
+#donations-list li {
+  margin: 10px 0; 
+  font-size: 18px;
+}
