@@ -20,7 +20,7 @@ class TotalDecorator extends ReceiptDecorator {
     public function generate_receipt(): string {
         $base_receipt = parent::generate_receipt(); // Get the base receipt details
         $total = $this->total_donation(); // Calculate the total donation
-        return $base_receipt . "\nTotal Donation: " . number_format($total, 2); // Format the total donation
+        return $base_receipt . "<br><br> Total Donation: " . number_format($total, 2); // Format the total donation
     }
 
     /**
