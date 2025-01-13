@@ -256,10 +256,6 @@ class Event implements Subject {
     }
 
 
-    // public function registerObserver(Observer $o) {
-    //     $this->observers[] = $o;
-    // }
-
     public function registerObserver(Observer $o): void {
         $conn = DBConnection::getInstance()->getConnection();
         $observerType = ($o instanceof Notification) ? 0 : 1;
@@ -273,14 +269,6 @@ class Event implements Subject {
         $stmt->execute();
     }
     
-
-    // public function removeObserver(Observer $o): void {
-    //     $index = array_search($o, $this->observers, true);
-    //     if ($index !== false) {
-    //         unset($this->observers[$index]);
-    //         $this->observers = array_values($this->observers); 
-    //     }
-    // }
 
     public function removeObserver(Observer $o): void {
 
