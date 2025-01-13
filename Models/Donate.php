@@ -138,35 +138,31 @@ class Donate {
         return [];
     }
 
-    public function getAmount(): float {
-        $totalAmount = 0.0;
-        foreach ($this->Donation_Details as $donation) {
-            $totalAmount += $donation->getDonationAmount();
-        }
-        return $totalAmount;
-    }
-
-    /*public function generateReceipt(): void {
-        echo "Donation Receipt\n";
-        echo "Donate ID: " . $this->Donate_ID . "\n";
-        echo "Donor ID: " . $this->DonorID . "\n";
-        echo "Date: " . $this->Date . "\n";
-        echo "Time: " . $this->Time . "\n";
-        echo "Donations:\n";
+    public function generateReceipt($donerName): string {
+        $date = new DateTime($this->Date);
+        $receipt = new BasicReceipt($donerName, $date, $this);
+        $receipt->createReceipt();
     
         foreach ($this->Donation_Details as $donation) {
-            if ($donation instanceof MoneyDonation) {
-                echo "- Donation ID: " . $donation->getId() . " | Type: ".$donation->getDonationType()  . $donation->getCashAmount() . "\n";
-            } elseif ($donation instanceof MedicalDonation) {
-                echo "- Donation ID: " . $donation->getId() . " | Type: Medical\n";
-                foreach ($donation->getMedicalItems() as $item) {
-                    $medical = $item['medical'];
-                    $quantity = $item['quantity'];
-                    echo "    * Medical Item: " . $medical->getName() . " | Quantity: " . $quantity . " | Expiration Date: " . $medical->getExpirationDate()->format('Y-m-d') . "\n";
-                }
-            }
+            $receipt = $this->addDonationToReceipt($receipt, $donation);
         }
-    }*/
+        $receipt = new TotalDecorator($receipt);
+    
+        return $receipt->generate_receipt();
+    }
+
+    public function addDonationToReceipt($receipt, $donation){
+        if ($donation instanceof MedicalDonation) {
+            $items = $donation->getMedicalItems();
+            $PaymentData = $donation->calculatePayment($items);
+            $receipt = new MedicalReceiptDecorator($receipt, $items, $PaymentData);
+        } elseif ($donation instanceof MoneyDonation) {
+            $CashAmount = $donation->getCashAmount();
+            $PaymentData = $donation->calculatePayment($CashAmount);
+            $receipt = new MoneyReceiptDecorator($receipt, $CashAmount, $PaymentData);
+        }
+        return $receipt;
+    }
     
 }
 
