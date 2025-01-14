@@ -127,6 +127,7 @@ class MedicalDonation extends Donation {
                 return false;
             }
             $medical= new Medical();
+            $this->medicalItems=[];
             foreach($DonatoinMedical as $item){
                 if(!$medical->readMedical($item['MedicalID'])){
                    return false;

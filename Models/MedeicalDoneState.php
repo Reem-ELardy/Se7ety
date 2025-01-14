@@ -4,6 +4,7 @@ require_once "IMedicalDonationState.php";
 require_once "Medical.php";
 class MedicalDoneState implements IMedicalDonationState{
     public function ProsscingDonation(MedicalDonation $donation): void{
+        $donation->setDonationStatus('Done');
         if( $donation->updateDonation()){
             $DonationMedicalItems=$donation->getDonationMedicalItem($donation->getDonationId());
             if (!is_array($DonationMedicalItems)) {
@@ -15,7 +16,6 @@ class MedicalDoneState implements IMedicalDonationState{
                 throw new Exception("Invalid medical item format.");}
                 $MedicalID=$item['MedicalID'];
                 $Quantity =$item['Quantity'];
-            
                 $medical=new Medical();
                 if($medical->incrementMedicalquantity($MedicalID,$Quantity))
                 {
@@ -27,14 +27,10 @@ class MedicalDoneState implements IMedicalDonationState{
 
 
             }
-            
         }
         else{
             throw new Exception("Medical status  is not updated  " );
-
-
         }
-        
 
     }
 

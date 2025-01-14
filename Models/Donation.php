@@ -10,6 +10,8 @@ enum DonationType: string {
 enum Status: string {
     case Pending = 'Pending';
     case Done = 'Done';
+    case Canceled = 'Canceled';
+
 }
 
 abstract class Donation {
@@ -185,13 +187,21 @@ abstract class Donation {
 
     public function updateDonation(): bool {
         $query = "UPDATE DONATION SET Status = ? WHERE ID = ?";
-        $stmt = $this->dbProxy->prepare($query, [$this->cashamount, $this->status->value, $this->id]);
+        $stmt = $this->dbProxy->prepare($query, [$this->status->value, $this->id]);
 
         if (!$stmt) {
             return false;
         }
 
         return true;
+    }
+    public function CancelDonation():bool{
+        if($this->status->value === 'Pending'){
+            $this->setDonationStatus("Canceled");
+            $this->updateDonation();
+            return true;
+        }
+        return false;
     }
 
     public function deleteDonation(): bool {
