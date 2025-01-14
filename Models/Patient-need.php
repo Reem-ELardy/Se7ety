@@ -1,5 +1,11 @@
 <?php
 
+require_once 'PatientNeedWaitingState.php';
+require_once 'PatientNeedAcceptedState.php';
+require_once 'PatientNeedDoneState.php';
+require_once '../DB-creation/DB-Connection.php';
+require_once 'PatientNeedStateFactory.php';
+
 
 enum Status: string {
     case Waiting = 'Waiting';
@@ -7,131 +13,147 @@ enum Status: string {
     case Done = 'Done';
 }
 
-class PatientNeed{
-
+class PatientNeed {
     private int $MedicalID;
     private int $PatientID;
     private Status $status;
+    private IPatientNeedState $state; 
 
+    public function __construct(int $MedicalID, int $PatientID, Status $status = Status::Waiting) {
+        $this->MedicalID = $MedicalID;
+        $this->PatientID = $PatientID;
+        $this->status = $status;
+    }
 
+    // === Getters ===
     public function getMedicalID(): int {
         return $this->MedicalID;
     }
 
-    // Setter for MedicalID
-    public function setMedicalID(int $MedicalID): void {
-        $this->MedicalID = $MedicalID;
-    }
-
-    // Getter for PatientID
     public function getPatientID(): int {
         return $this->PatientID;
     }
 
-    // Setter for PatientID
-    public function setPatientID(int $PatientID): void {
-        $this->PatientID = $PatientID;
-    }
-
-    // Getter for Status
     public function getStatus(): Status {
         return $this->status;
     }
 
-    // Setter for Status
+    public function getState(): IPatientNeedState {
+        return $this->state;
+    }
+
+    // === Setters ===
     public function setStatus(Status $status): void {
         $this->status = $status;
     }
-   
 
-    public function createPatientNeed() {
+    public function setState(IPatientNeedState $state): void {
+        $this->state = $state;
+    }
+
+    // === State Transition Logic ===
+    public function handleRequest(DonationAdmin $admin): void {
+        $this->state->handleRequest($this, $admin);
+    }
+
+    public function progressState(): void {
+        $this->state->progressState($this);
+    }
+
+    // === Database Methods ===
+
+    public function createPatientNeed(): bool {
         $conn = DBConnection::getInstance()->getConnection();
-
-        // Prepare the insert statement
         $query = "INSERT INTO PatientNeed (MedicalID, PatientID, Status) VALUES (?, ?, ?)";
         $stmt = $conn->prepare($query);
+    
         if (!$stmt) {
+            echo "Error preparing statement: " . $conn->error . "\n";
             return false;
         }
 
-        $stmt->bind_param("iis", $this->MedicalID, $this->PatientID, $this->status);
+        $statusValue = $this->status->value;
+        $stmt->bind_param("iis", $this->MedicalID, $this->PatientID, $statusValue);
         $result = $stmt->execute();
-        $stmt->close();
-
-        return $result;
-    }
-
-    // Function to update an existing PatientNeed record
-    public function updatePatientNeed(int $medicalID, int $patientID, Status $status) {
-        $conn = DBConnection::getInstance()->getConnection();
-
-        // Prepare the update statement
-        $query = "UPDATE PatientNeed SET MedicalID = ?, PatientID = ?, Status = ? WHERE MedicalID = ? AND PatientID = ?";
-        $stmt = $conn->prepare($query);
-        if (!$stmt) {
-            return false;
+    
+        if ($result) {
+            $this->setState(PatientNeedStateFactory::create($this->status));
+        } else {
+            echo "Error executing query: " . $stmt->error . "\n";
         }
-
-
-        $stmt->bind_param("iisii", $medicalID, $patientID, $status, $medicalID, $patientID);
-        $result = $stmt->execute();
+    
         $stmt->close();
-
+    
         return $result;
     }
+    
 
-    // Function to read a PatientNeed record from the database
-    public function readPatientNeed(int $medicalID, int $patientID): ?array {
+    public function updatePatientNeed(): bool {
+        return $this->executeQuery(
+            "UPDATE PatientNeed SET Status = ? WHERE MedicalID = ? AND PatientID = ? AND IsDeleted = 0",
+            [$this->status->value, $this->MedicalID, $this->PatientID]
+        );
+    }
+
+    public function deletePatientNeed(): bool {
+        return $this->executeQuery(
+            "UPDATE PatientNeed SET IsDeleted = 1 WHERE MedicalID = ? AND PatientID = ?",
+            [$this->MedicalID, $this->PatientID]
+        );
+    }
+
+    public function readPatientNeed(int $MedicalID, int $PatientID): ?self {
         $conn = DBConnection::getInstance()->getConnection();
-
-        // Prepare the select statement
-        $query = "SELECT MedicalID, PatientID, Status FROM PatientNeed WHERE MedicalID = ? AND PatientID = ?";
+        $query = "SELECT MedicalID, PatientID, Status FROM PatientNeed WHERE MedicalID = ? AND PatientID = ? AND IsDeleted = 0";
         $stmt = $conn->prepare($query);
+    
         if (!$stmt) {
+            echo "Error preparing statement: " . $conn->error . "\n";
             return null;
         }
-
-        // Bind parameters and execute the query
-        $stmt->bind_param("ii", $medicalID, $patientID);
+    
+        $stmt->bind_param("ii", $MedicalID, $PatientID);
         $stmt->execute();
-        $stmt->bind_result($medicalID, $patientID, $status);
-        $stmt->fetch();
+        $result = $stmt->get_result();
+    
+        if ($row = $result->fetch_assoc()) {
+            try {
+                $statusEnum = Status::from($row['Status']);
+            } catch (ValueError $e) {
+                echo "Error: Invalid status value '{$row['Status']}' in the database.\n";
+                return null;
+            }
 
-        if ($medicalID && $patientID) {
-            $result = [
-                'MedicalID' => $medicalID,
-                'PatientID' => $patientID,
-                'Status' => $status
-            ];
-            $stmt->close();
-            return $result;
+            $patientNeed = new self((int)$row['MedicalID'], (int)$row['PatientID'], $statusEnum);
+
+            $patientNeed->setState(PatientNeedStateFactory::create($statusEnum));
+    
+            return $patientNeed;
         }
-
-        $stmt->close();
+    
         return null;
     }
+    
 
-    // Function to delete a PatientNeed record
-    public function deletePatientNeed(int $medicalID, int $patientID): bool {
+    private function executeQuery(string $query, array $params): bool {
         $conn = DBConnection::getInstance()->getConnection();
-
-        // Prepare the delete statement
-        $query = "DELETE FROM PatientNeed WHERE MedicalID = ? AND PatientID = ?";
         $stmt = $conn->prepare($query);
+
         if (!$stmt) {
+            echo "Error preparing query: " . $conn->error . "\n";
             return false;
         }
 
-        // Bind parameters and execute the delete
-        $stmt->bind_param("ii", $medicalID, $patientID);
+        $stmt->bind_param(str_repeat('s', count($params)), ...$params);
         $result = $stmt->execute();
-        $stmt->close();
 
+        if (!$result) {
+            echo "Error executing query: " . $stmt->error . "\n";
+        }
+
+        $stmt->close();
         return $result;
     }
 
-    public function retriveAll(){
-        // admin function that will be added in phase 2
-    }
+
 }
-?>
