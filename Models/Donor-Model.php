@@ -12,8 +12,6 @@ class Donor extends Person {
         // Initialize the parent class (Person)
         parent::__construct($id, $name, $age, $password, $email, $addressId, $IsDeleted);
         $this->personId = $personId;
-        // Initialize the DBProxy with the username
-        $this->dbProxy = new DBProxy($name);
     }
 
     // Getters
