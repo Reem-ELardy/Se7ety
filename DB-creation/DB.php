@@ -207,6 +207,7 @@ run_queries_create_DB(
             ID INT PRIMARY KEY AUTO_INCREMENT,
             EventID INT,
             PatientID INT,
+            date_time DATE,
             IsDeleted tinyint(1) NOT NULL DEFAULT 0,
             FOREIGN KEY (EventID) REFERENCES Event(ID),
             FOREIGN KEY (PatientID) REFERENCES Patient(ID)
