@@ -1,18 +1,10 @@
 <?php
 
-require_once "Observers.php";
 require_once "Certificate.php";
-
-interface Subject {
-    public function registerObserver(Observer $o);
-    public function removeObserver(Observer $o);
-    public function notifyObserver();
-    public function getId();
-    public function getName();
-    public function getLocationID();
-    public function getDateTime();
-    public function getDescription();
-}
+require_once "Ticket.php";
+require_once "Subject.php";
+require_once "EventReminder.php";
+require_once "Notification.php";
 
 enum EventType: string {
     case DonationCollect = 'Donation-Collect';
@@ -245,6 +237,11 @@ class Event implements Subject {
         $stmt->bind_param("i", $this->id);
         $this->isDeleted = 1;
         $result = $stmt->execute();
+        $stmt->close();
+        $this->getEventObservers();
+        foreach ($this->observers as $observer) {
+            $this->removeObserver($observer); 
+        }
 
     }
 
@@ -440,6 +437,8 @@ class Event implements Subject {
                 $PatientNotification = new Notification($patientId, "You have been added to the event: ".$this->name);
                 $PatientNotification->createNotification();
                 $this->registerObserver($PatientNotification);
+                $patientTicket = new Ticket($this->id, $patientId, $this->date_time);
+                $patientTicket->createTicket();
             }
         }
     }
@@ -451,7 +450,7 @@ class Event implements Subject {
             $this->addVolunteer();
             $VolunteerNotification = new Notification($volunteerID, "You have been added to the event: ".$this->name);
             $VolunteerNotification->createNotification();
-            $this->registerObserver($VolunteerNotification);
+            $this->registerObserver($VolunteerNotification); 
         }
     }
 
@@ -465,6 +464,9 @@ class Event implements Subject {
                 $PatientNotification = new Notification($patientId, "You have been deleted from the event: ".$this->name);
                 $PatientNotification->createNotification();
                 $this->registerObserver($PatientNotification);
+                $patientTicket = new Ticket($this->id, $patientId);
+                $patientTicket->readTicket();
+                $patientTicket->deleteTicket();
             }
         }
     }
@@ -486,110 +488,5 @@ class Event implements Subject {
 }
 
 
-class EventsModel {
 
-    // Function to get all events, including deleted ones
-    public function getAllEvents(): array {
-        $conn = DBConnection::getInstance()->getConnection();
-        $id = $maxNoOfAttendance = $locationID = $totalNoPatients = $totalNoVolunteers = 0;
-        $name = $date = $description = $type = '';
-        $events = [];
-
-        $query = "SELECT ID, Name, Date, Description, Type, TotalNoPatients, TotalNoVolunteers, MaxNoOfAttendance, LocationID 
-                  FROM Event";
-
-        $stmt = $conn->prepare($query);
-        if (!$stmt) {
-            return $events;
-        }
-
-        $stmt->execute();
-        $stmt->bind_result($id, $name, $date, $description, $type, $totalNoPatients, $totalNoVolunteers, $maxNoOfAttendance, $locationID);
-        $type = match($type) {
-            'Donation-Collect' => EventType::DonationCollect,
-            'Medical-Tour' => EventType::MedicalTour,
-            'Other' => EventType::Other,
-            default => throw new InvalidArgumentException("Invalid event type: $type"),
-        };
-        $date_time = new DateTime($date);
-        while ($stmt->fetch()) {
-            $event = new Event($id, $name, $locationID, $date_time, $description, $maxNoOfAttendance, $type);
-            $event->setNoOfPatients($totalNoPatients);
-            $event->setNoOfVolunteers($totalNoVolunteers);
-            $events[] = $event;
-        }
-
-        $stmt->close();
-        return $events;
-    }
-
-    // Function to get all non-deleted events
-    public function getNonDeletedEvents(): array {
-        $conn = DBConnection::getInstance()->getConnection();
-        $id = $maxNoOfAttendance = $locationID = $totalNoPatients = $totalNoVolunteers = 0;
-        $name = $date = $description = $type = '';
-        $events = [];
-
-        $query = "SELECT ID, Name, Date, Description, Type, TotalNoPatients, TotalNoVolunteers, MaxNoOfAttendance, LocationID 
-                  FROM Event WHERE IsDeleted = 0";
-
-        $stmt = $conn->prepare($query);
-        if (!$stmt) {
-            return $events;
-        }
-
-        $stmt->execute();
-        $stmt->bind_result($id, $name, $date, $description, $type, $totalNoPatients, $totalNoVolunteers, $maxNoOfAttendance, $locationID);
-        $type = match($type) {
-            'Donation-Collect' => EventType::DonationCollect,
-            'Medical-Tour' => EventType::MedicalTour,
-            'Other' => EventType::Other,
-            default => throw new InvalidArgumentException("Invalid event type: $type"),
-        };
-        $date_time = new DateTime($date);
-        while ($stmt->fetch()) {
-            $event = new Event($id, $name, $locationID, $date_time, $description, $maxNoOfAttendance, $type);
-            $event->setNoOfPatients($totalNoPatients);
-            $event->setNoOfVolunteers($totalNoVolunteers);
-            $events[] = $event;
-        }
-
-        $stmt->close();
-        return $events;
-    }
-
-    // Function to get upcoming events (non-deleted and date >= current date)
-    public function getUpcomingEvents(): array {
-        $conn = DBConnection::getInstance()->getConnection();
-        $id = $maxNoOfAttendance = $locationID = $totalNoPatients = $totalNoVolunteers = 0;
-        $name = $date = $description = $type = '';
-        $events = [];
-
-        $query = "SELECT ID, Name, Date, Description, Type, TotalNoPatients, TotalNoVolunteers, MaxNoOfAttendance, LocationID 
-                  FROM Event WHERE IsDeleted = 0 AND Date >= CURDATE()";
-
-        $stmt = $conn->prepare($query);
-        if (!$stmt) {
-            return $events;
-        }
-
-        $stmt->execute();
-        $stmt->bind_result($id, $name, $date, $description, $type, $totalNoPatients, $totalNoVolunteers, $maxNoOfAttendance, $locationID);
-        $type = match($type) {
-            'Donation-Collect' => EventType::DonationCollect,
-            'Medical-Tour' => EventType::MedicalTour,
-            'Other' => EventType::Other,
-            default => throw new InvalidArgumentException("Invalid event type: $type"),
-        };
-        $date_time = new DateTime($date);
-        while ($stmt->fetch()) {
-            $event = new Event($id, $name, $locationID, $date_time, $description, $maxNoOfAttendance, $type);
-            $event->setNoOfPatients($totalNoPatients);
-            $event->setNoOfVolunteers($totalNoVolunteers);
-            $events[] = $event;
-        }
-
-        $stmt->close();
-        return $events;
-    }
-}
+?>

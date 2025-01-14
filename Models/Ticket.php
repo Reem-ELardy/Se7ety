@@ -6,7 +6,7 @@ class Ticket {
     private $patientID;
     private $dateTime;
 
-    public function __construct($eventID, $patientID, DateTime $dateTime) {
+    public function __construct($eventID, $patientID, DateTime $dateTime = null) {
         $this->eventID = $eventID;
         $this->patientID = $patientID;
         $this->dateTime = $dateTime;
@@ -65,26 +65,31 @@ class Ticket {
         return $result;
     }
 
-    public function getTicketByID($id) {
+    public function readTicket() {
         $conn = DBConnection::getInstance()->getConnection();
 
         $query = "SELECT t.ID, t.EventID, t.PatientID, t.date_time
-                  FROM Ticket t
-                  WHERE t.ID = ?";
+                FROM Ticket t
+                WHERE t.EventID = ? AND t.PatientID = ? AND t.IsDeleted = 0";
         $stmt = $conn->prepare($query);
 
         if (!$stmt) {
-            return null;
+            return false;
         }
 
-        $stmt->bind_param("i", $id);
+        $stmt->bind_param("ii", $this->eventID, $this->patientID);
         $stmt->execute();
         $result = $stmt->get_result();
 
         if ($result->num_rows > 0) {
-            return $result->fetch_assoc();
+            $ticketData = $result->fetch_assoc();
+            $this->id = $ticketData['ID'];
+            $this->eventID = $ticketData['EventID'];
+            $this->patientID = $ticketData['PatientID'];
+            $this->dateTime = new DateTime($ticketData['date_time']);
+            return true;
         } else {
-            return null;
+            return false;
         }
     }
 
@@ -108,20 +113,21 @@ class Ticket {
         return $stmt->execute();
     }
 
-    public function deleteTicket($id) {
+    public function deleteTicket() {
         $conn = DBConnection::getInstance()->getConnection();
-
-        $query = "DELETE FROM Ticket WHERE ID = ?";
+    
+        $query = "UPDATE Ticket SET IsDeleted = 1 WHERE ID = ?";
         $stmt = $conn->prepare($query);
-
+    
         if (!$stmt) {
             return false;
         }
-
-        $stmt->bind_param("i", $id);
-
+    
+        $stmt->bind_param("i", $this->id);
+    
         return $stmt->execute();
     }
+    
 }
 
 ?>
