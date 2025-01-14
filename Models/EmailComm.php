@@ -1,15 +1,15 @@
 <?php
+require_once 'ICommunicationStrategy.php';
+require_once 'Communication.php';
 
-class Email implements ICommunicationStrategy{
+class Email implements ICommunicationStrategy {
 
- public function send_communication(string $message, Person $person) { 
-    $communication = new Communication( $this, $message ,$event, $person, MessageType::Email);
-    if ($communication->createCommunication()) {
-        return true;
-    } else {
-        return false;
+    public function send_communication(string $message, Person $person, Subject $event): bool {
+        $communication = new Communication($this, $message, $event, $person, MessageType::Email);
+        return $communication->createCommunication();
     }
- }
-}
+
+    }
+
 
 ?>
