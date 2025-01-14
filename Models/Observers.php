@@ -56,28 +56,23 @@ class Notification implements Observer {
         $this->sent = $sent;
     }
 
-    public function update(
-        int $notificationId,
-        string $name,
-        int $locationId,
-        DateTime $date_time,
-        string $description
-    ): bool {
+    public function update(int $eventId, string $name, int $locationId, DateTime $date_time, string $description): bool {
         $conn = DBConnection::getInstance()->getConnection();
         // Update the message in the class property
-        $this->message = "Event Update: $name at $locationId on " . $date_time->format('Y-m-d H:i:s') . 
+        $updatedMessage = "Event Update: $name at $locationId on " . $date_time->format('Y-m-d H:i:s'). 
                          ". Description: $description.";
-    
+        
+        $this->message = $updatedMessage;
         // SQL query to update the message and time in the database
         $sql = "UPDATE Notification 
-                SET Message = ?, CreatedAt = CURRENT_TIMESTAMP 
-                WHERE ID = ? AND Sent = 0";
+                SET Message = ? 
+                WHERE ID = ? AND IsDeleted = 0";
     
         $stmt = $conn->prepare($sql);
     
         if ($stmt) {
             // Bind the message and notification ID
-            $stmt->bind_param('si', $this->message, $notificationId);
+            $stmt->bind_param('si', $updatedMessage, $this->id);
     
             // Execute the query and check the result
             $result = $stmt->execute();
@@ -159,12 +154,10 @@ class Notification implements Observer {
         $result = $stmt->get_result();
     
         if ($row = $result->fetch_assoc()) {
-            return new Notification(
-                $row['ID'],
-                $row['ReceiverID'],
-                $row['Message'],
-                (bool) $row['Sent']
-            );
+            $notification = new Notification($row['ReceiverID'], $row['Message']);
+            $notification->setId($row['ID']);
+            $notification->setSent((bool) $row['Sent']);
+            return $notification;
         }
         
         return null; 
@@ -219,12 +212,12 @@ class EventReminder implements Observer {
         // Retrieve event details
         $eventId = $this->event->getId(); 
         $name = $this->event->getName(); 
-        $location = $this->event->getDateTime(); 
+        $location = $this->event->getLocationID(); 
         $eventDate = $this->event->getDateTime(); 
         $description = $this->event->getDescription(); 
 
         $this->reminderMessage = "Reminder: The event '$name' is scheduled at $location on " . 
-                                  $eventDate->format('Y-m-d H:i:s') . ". Description: $description.";
+                                  $eventDate->format('Y-m-d') . ". Description: $description.";
         
         // Calculate reminder date (1 day before event)
         $reminderDate = $eventDate->sub(new DateInterval('P1D'));
@@ -235,6 +228,9 @@ class EventReminder implements Observer {
         if ($stmt) {
             $stmt->bind_param('iss', $eventId, $this->reminderMessage, $reminderDate->format('Y-m-d H:i:s'));
             $result = $stmt->execute();
+            if ($result) {
+                $this->id = $conn->insert_id;
+            }
             $stmt->close();
             return $result;
         }
@@ -247,9 +243,10 @@ class EventReminder implements Observer {
 
         $conn = DBConnection::getInstance()->getConnection();
 
-        $updatedMessage = "Reminder: The event '$name' is scheduled at $locationId on " . 
+        $updatedMessage = "UPDATED Reminder: The event '$name' is scheduled at $locationId on " . 
                           $date_time->format('Y-m-d H:i:s') . ". Description: $description.";
 
+        $this->reminderMessage = $updatedMessage;
         $sql = "UPDATE EventReminder 
                 SET Message = ? 
                 WHERE EventID = ? AND IsDeleted = 0";
@@ -267,11 +264,11 @@ class EventReminder implements Observer {
 
     public static function getEventReminderDataById(int $id): ?array {
         $conn = DBConnection::getInstance()->getConnection();
-        $stmt = $conn->prepare("
-            SELECT ID, Message, ReminderDate
+        $sql = "SELECT ID, Message, ReminderDate
             FROM EventReminder
             WHERE ID = ? AND IsDeleted = 0
-        ");
+        ";
+        $stmt = $conn->prepare($sql);
         $stmt->bind_param('i', $id);
         $stmt->execute();
         $result = $stmt->get_result();

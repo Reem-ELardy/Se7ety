@@ -135,19 +135,21 @@ class Event implements Subject {
         $conn = DBConnection::getInstance()->getConnection();
         
         $query = "INSERT INTO Event (Name, Date, Description, Type, TotalNoPatients, TotalNoVolunteers, MaxNoOfAttendance, LocationID) 
-            VALUES (?, ?, ?, ?, 0, 0, ?, ?)";
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
 
         $date = $this->date_time->format('Y-m-d');
+        $typeString = $this->type->value;
         $stmt = $conn->prepare($query);
         if ($stmt) {
-            $stmt->bind_param('ssssiiii', $this->name, $date, $this->description, $this->type, 0, 0, $this->max_no_of_attendance, $this->locationID);
+            $stmt->bind_param('ssssiiii', $this->name, $date, $this->description, $typeString, $this->no_of_patients, $this->no_of_volunteers, $this->max_no_of_attendance, $this->locationID);
             $result = $stmt->execute();
             if ($result) {
                 $this->id = $conn->insert_id;
             }
-    
+
             $stmt->close();
             $EventReminder = new EventReminder($this);
+            $EventReminder->createReminder();
             $this->registerObserver($EventReminder);
             return $result;
         }
@@ -176,16 +178,7 @@ class Event implements Subject {
         $date = $date_time->format('Y-m-d');
         $typeString = $type->value;
     
-        $stmt->bind_param(
-            "sssisi",
-            $name,
-            $date,
-            $description,
-            $max_no_of_attendance,
-            $typeString,
-            $locationID,
-            $this->id
-        );
+        $stmt->bind_param("sssisii", $name, $date, $description, $max_no_of_attendance, $typeString, $locationID, $this->id);
 
         $this->setMeasurments($name, $locationID, $date_time, $description, $max_no_of_attendance, $type);
     
@@ -263,13 +256,12 @@ class Event implements Subject {
     
         $stmt = $conn->prepare("
             INSERT INTO Observer (EventID, ObserverID, Type, IsDeleted)
-            VALUES (?, ?, 0)
+            VALUES (?, ?, ?, ?)
         ");
-        $stmt->bind_param('iii', $this->id, $observerId ,$observerType);
+        $stmt->bind_param('iiii', $this->id, $observerId ,$observerType, $this->isDeleted);
         $stmt->execute();
     }
     
-
     public function removeObserver(Observer $o): void {
 
         $conn = DBConnection::getInstance()->getConnection();
@@ -287,10 +279,9 @@ class Event implements Subject {
     }
 
 
-    public function getEventObservers(): void {
+    public function fetchObserversData(): array {
         $conn = DBConnection::getInstance()->getConnection();
-        $id = $type = $observerId = 0;
-        $observers = [];
+        $observersData = [];
         $sql = "SELECT ID, Type, ObserverID FROM Observer WHERE EventID = ? AND IsDeleted = 0";
         $stmt = $conn->prepare($sql);
     
@@ -300,32 +291,42 @@ class Event implements Subject {
             $stmt->bind_result($id, $type, $observerId);
     
             while ($stmt->fetch()) {
-                if ($type == 0) { // Notification
-                    $notification = Notification::getNotificationById($observerId);
-                    if ($notification !== null) {
-                        $observers[] = $notification;
-                    }
-                } elseif ($type == 1) { // EventReminder
-                    $reminderData = EventReminder::getEventReminderDataById($observerId);
-                    if ($reminderData !== null) {
-                        $reminder = new EventReminder($this); // Assuming Subject class has a constructor that takes eventId
-                        $reminder->setId($reminderData['id']);
-                        $reminder->setReminderMessage($reminderData['message']);
-                        $observers[] = $reminder;
-                    }
-                }
+                $observersData[] = ['id' => $id, 'type' => $type, 'observerId' => $observerId];
             }
     
             $stmt->close();
         }
     
-       $this->observers = $observers;
+        return $observersData;
     }
+    
+    public function getEventObservers(): void {
+        $observers = [];
+        $observersData = $this->fetchObserversData();
+        foreach ($observersData as $data) {
+            if ($data['type'] == 0) { // Notification
+                $notification = Notification::getNotificationById($data['observerId']);
+                if ($notification !== null) {
+                    $observers[] = $notification;
+                }
+            } elseif ($data['type'] == 1) { // EventReminder
+                $reminderData = EventReminder::getEventReminderDataById($data['observerId']);
+                if ($reminderData !== null) {
+                    $reminder = new EventReminder($this); // Assuming Subject class has a constructor that takes eventId
+                    $reminder->setId($reminderData['id']);
+                    $reminder->setReminderMessage($reminderData['message']);
+                    $observers[] = $reminder;
+                }
+            }
+        }
+    
+        $this->observers = $observers;
+    }
+    
     
 
     public function notifyObserver() {
         $this->getEventObservers();
-    
         foreach ($this->observers as $observer) {
             $observer->update($this->id, $this->name, $this->locationID, $this->date_time, $this->description); 
         }
@@ -438,8 +439,6 @@ class Event implements Subject {
                 $PatientNotification = new Notification($patientId, "You have been added to the event: ".$this->name);
                 $PatientNotification->createNotification();
                 $this->registerObserver($PatientNotification);
-                $EventReminder = new EventReminder($this);
-                $this->registerObserver($EventReminder);
             }
         }
     }
@@ -593,6 +592,3 @@ class EventsModel {
         return $events;
     }
 }
-
-
-?>
