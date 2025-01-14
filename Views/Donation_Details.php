@@ -4,7 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Donation Details</title>
-    <link rel="stylesheet" href="/Views/style_Home.css">
+    <link rel="stylesheet" href="style_Home.css">
+    <style>
+       
+    </style>
 </head>
 <body>
     <div class="container">
@@ -33,6 +36,10 @@
                     <div class="donation-section">
                         <h3>Money Donation</h3>
                         <strong>Amount:</strong> ${donationDetail['cashamount']}<br>
+                        <div class="action-buttons">
+                            <button class="undo-button" onclick="undoDonation('money', ${donationDetail['id']})">Undo</button>
+                            <button class="redo-button" onclick="redoDonation('money', ${donationDetail['id']})">Redo</button>
+                        </div>
                     </div>
                 `;
             }
@@ -49,11 +56,17 @@
                 if (Array.isArray(medicalItems) && medicalItems.length > 0) {
                     medicalItems.forEach((item, index) => {
                         donationInfo.innerHTML += `
-                            <strong>Medical Donation ${index + 1}:</strong><br>
-                            <strong>Name:</strong> ${item['medicalname']}<br>
-                            <strong>Type:</strong> ${item['medicaltype']}<br>
-                            <strong>Quantity:</strong> ${item['quantity']}<br>
-                            <hr>
+                            <div>
+                                <strong>Medical Donation ${index + 1}:</strong><br>
+                                <strong>Name:</strong> ${item['medicalname']}<br>
+                                <strong>Type:</strong> ${item['medicaltype']}<br>
+                                <strong>Quantity:</strong> ${item['quantity']}<br>
+                                <div class="action-buttons">
+                                    <button class="undo-button" onclick="undoDonation('medical', ${item['id']})">Undo</button>
+                                    <button class="redo-button" onclick="redoDonation('medical', ${item['id']})">Redo</button>
+                                </div>
+                                <hr>
+                            </div>
                         `;
                     });
                 } else {
@@ -64,6 +77,17 @@
             }
         } else {
             donationInfo.textContent = "Donation not found.";
+        }
+
+        
+        function undoDonation(type, id) {
+            alert("dah for test bs ya reem");
+        
+        }
+
+        function redoDonation(type, id) {
+            alert("dah for test bs ya reem");
+            
         }
     </script>
 </body>
