@@ -1,5 +1,5 @@
 <?php
-require_once 'IDonationMethodStrategy.php';
+require_once 'IDonationPaymentStrategy.php';
 
 class InKindDonationPayment implements IDonationPaymentStrategy {
     private $CashDonationPayment;
