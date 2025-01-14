@@ -2,7 +2,9 @@
 require_once __DIR__ . '/../DB-creation/IDatabase.php';
 require_once __DIR__ . '/../DB-creation/DBProxy.php';
 require_once "Donation.php";
-
+require_once 'MedicalReceiptDecorator.php';
+require_once 'MoneyReceiptDecorator.php';
+require_once 'TotalDecorator.php';
 
 class Donate {
     private int $Donate_ID;
