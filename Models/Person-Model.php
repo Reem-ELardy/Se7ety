@@ -11,7 +11,7 @@ abstract class Person {
     protected $email;
     protected $addressId;
     protected $IsDeleted;
-    private $dbProxy;
+    protected $dbProxy;
 
 
     public function __construct($id = null, $name = "", $age = 0, $password = "", $email = "", $addressId = null,$IsDeleted=0) {

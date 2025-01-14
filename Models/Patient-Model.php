@@ -11,7 +11,6 @@ class Patient extends Person {
     protected $needs;
     protected $nationalId;
     protected $needslist=[];
-    private $dbProxy;
 
 
     public function __construct($id = null, $personId = null, $name = "", $needs = "", $nationalId = null,

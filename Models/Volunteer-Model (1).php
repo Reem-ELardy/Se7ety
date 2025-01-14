@@ -14,7 +14,6 @@ class Volunteer extends Person {
     protected $age;
     protected $skills = [];
     protected $certificates = [];
-    private $dbProxy;
 
 
     public function __construct($id = null, $personId = null, $name = "", $gender = "", $nationalId = null, $job = "",

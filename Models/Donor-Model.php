@@ -6,7 +6,7 @@ require_once 'Person-Model.php';
 class Donor extends Person {
     protected $id;
     protected $personId;
-    private $dbProxy;
+
 
     public function __construct($id = null, $personId = null, $name = "", $age = 0, $password = "", $email = "", $addressId = null, $IsDeleted = false) {
         // Initialize the parent class (Person)
