@@ -159,20 +159,35 @@ class Communication {
         if (!$stmt) {
             return false;
         }
+    
         $stmt->bind_param("i", $communicationId);
         $stmt->execute();
-        $stmt->bind_result($this->id, $personId, $type, $message, $personName);
+    
+        // Declare variables for the results
+        $id = null;
+        $personId = null;
+        $type = null;
+        $message = null;
+        $personName = null;
+    
+        $stmt->bind_result($id, $personId, $type, $message, $personName);
+    
         if ($stmt->fetch()) {
-            
+            $this->id = $id;
             $this->recipient = new Person($personName); 
-            $this->messageType = MessageType::from($type); 
+               // Validate and set $type
+            if ($type !== null) {
+                $this->messageType = MessageType::from($type); 
+            } else {
+                throw new Exception("Invalid message type: null");
+            }
             $this->message = $message;
     
             return true;
         } else {
             return false;
         }
-    }
+    }  
 
     public function deleteCommunication($communicationId) {
         $conn = DBConnection::getInstance()->getConnection();
