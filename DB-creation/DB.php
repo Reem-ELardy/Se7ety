@@ -104,7 +104,6 @@ run_queries_create_DB(
             ID INT PRIMARY KEY AUTO_INCREMENT,
             PersonID INT NOT NULL,
             Role ENUM('DonationAdmin', 'PaymentAdmin') NOT NULL,
-            IsDeleted tinyint(1) NOT NULL DEFAULT 0,
             FOREIGN KEY (PersonID) REFERENCES Person(ID)
         )",
         "CREATE TABLE IF NOT EXISTS $dbname.PatientNeed (
