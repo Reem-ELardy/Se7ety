@@ -85,14 +85,10 @@ abstract class Donation {
             session_start();
         }
     
-        // Retrieve the donation data for this specific donation ID
-        if (!isset($_SESSION['donations'][$donation_id])) {
-            return;
-        }
         $donation = &$_SESSION['donations'][$donation_id];
     
         // Process donation steps based on the session state
-        if ($donation['donation_step'] == 'Started') {
+        if (!isset($donation['donation_step']) || $donation['donation_step'] == null || $donation['donation_step'] == 'Validation Failed') {
             if (!$this->validate($details)) {
                 $donation['donation_step'] = 'Validation Failed';
                 return;
@@ -110,9 +106,8 @@ abstract class Donation {
             return;
         }
     
-        if ($donation['donation_step'] === 'payment_done') {
+        if ($donation['donation_step'] === 'payment_done' || $donation['donation_step'] == 'Payment Failed') {
             $paymentMethod = $this->getPaymentMethod();
-            echo $paymentMethod;
             if (strtolower($paymentMethod) != 'cash' && strtolower($paymentMethod) != 'inkind') {
                 $PaymentDetails = $this->getState('PaymentDetails', $donation_id);
                 if (!$this->Payment($paymentMethod, $PaymentDetails, $details)) {
@@ -122,7 +117,6 @@ abstract class Donation {
                 $this->CompleteDonation();
             }
         }
-
         unset($_SESSION['donations'][$donation_id]);
         return;
     }
@@ -225,17 +219,15 @@ abstract class Donation {
     
             $donations = [];
             while ($stmt->fetch()) {
-                $donation = new Donation($DonateID, $Type, $cashamount, $Status);
-                if($type = DonationType::Medical){
-                    $donation = new MedicalDonation($DonateID, $Status);
-                    $donation->getMedicalItems();
-                }else if($type = DonationType::Money){
-                    $donation = new MoneyDonation($DonateID, $Type, $cashamount, $Status);
+                $type = DonationType::from($Type);
+                if($type == DonationType::Medical){
+                    $donation = new MedicalDonation(donateID:$DonateID, status:$Status);
+                    $donation->readMedicalDonation($DonationID);
+                }else if($type == DonationType::Money){
+                    $donation = new MoneyDonation(DonateID: $DonateID, cashamount:$cashamount, status:$Status);
                 }
                 $donation->setDonationId($DonationID);
-                $donations[] = [
-                    $donation
-                ];
+                $donations[] = $donation;
             }
             return $donations;
         }
