@@ -281,6 +281,7 @@ class Event implements Subject {
 
     public function fetchObserversData(): array {
         $conn = DBConnection::getInstance()->getConnection();
+        $id = $type = $observerId = 0;
         $observersData = [];
         $sql = "SELECT ID, Type, ObserverID FROM Observer WHERE EventID = ? AND IsDeleted = 0";
         $stmt = $conn->prepare($sql);
