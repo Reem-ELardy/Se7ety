@@ -176,3 +176,23 @@ header h1 {
   margin: 10px 0; 
   font-size: 18px;
 }
+
+/* Styling for clear separation */
+.donation-section {
+  margin: 20px 0;
+  padding: 15px;
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  background-color: #f9f9f9;
+}
+
+.donation-section h3 {
+  margin-top: 0;
+  color: #007bff;
+}
+
+hr {
+  border: 0;
+  border-top: 1px solid #ddd;
+  margin: 15px 0;
+}
