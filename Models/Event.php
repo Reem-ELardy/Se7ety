@@ -7,6 +7,7 @@ require_once "EventReminder.php";
 require_once "Notification.php";
 require_once "Patient-Event.php";
 require_once "Event-Participation.php";
+require_once "ObserversIterator.php";
 
 enum EventType: string {
     case DonationCollect = 'Donation-Collect';
@@ -323,14 +324,22 @@ class Event implements Subject {
         $this->observers = $observers;
     }
     
-    
+    public function createObserversIterator(): ObserversIterator
+    {
+        return new ObserversIterator($this->observers);
+    }
 
-    public function notifyObserver() {
+    
+    public function notifyObserver()
+    {
         $this->getEventObservers();
-        foreach ($this->observers as $observer) {
-            $observer->update($this->id, $this->name, $this->locationID, $this->date_time, $this->description); 
+        $iterator = $this->createObserversIterator();
+        
+        foreach ($iterator as $observer) {
+            $observer->update($this->id, $this->name, $this->locationID, $this->date_time, $this->description);
         }
     }
+    
     
 
     public function measurnmentsChanged(){
