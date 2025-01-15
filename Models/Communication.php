@@ -4,7 +4,7 @@ require_once 'ICommunicationStrategy.php';
 require_once 'Event.php';
 
 enum MessageType: string {
-    case Email = 'Email';
+    case Email = 'E-Mail';
     case SMS = 'SMS';
     case SocialMedia = 'SocialMedia';
 }
@@ -81,7 +81,6 @@ class Communication {
                    ", Location ID: " . $event->getLocationID() .
                    ", Date & Time: " . $event->getDateTime()->format('Y-m-d H:i:s') .
                    ", Description: " . $event->getDescription();
-        echo "Communication Details: " . $details;
     }
     public function send_communication(MessageType $type,string $message) {
         switch ($type) {
@@ -92,7 +91,7 @@ class Communication {
                 $this->communicationMethod = new SMS();
                 break;
             case MessageType::SocialMedia:
-                    $this->communicationMethod = new SocialMedia($username ?? 'defaultUser', $platform ?? 'defaultPlatform');
+                $this->communicationMethod = new SocialMedia($platform ?? PlatformType::Facebook, $this->recipient->getEmail());
                 break;
              }
             $this->communicationMethod->send_communication($message, $this -> recipient, $this->event);
@@ -140,7 +139,6 @@ class Communication {
         $result = $stmt->execute();
     
         if (!$result) {
-            echo "Execute failed: " . $stmt->error;
             return false;
         }
     
