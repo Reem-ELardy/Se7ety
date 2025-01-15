@@ -7,18 +7,24 @@ require_once 'Certificate.php';
 require_once 'ICommunicationStrategy.php';
 require_once 'Ticket.php';
 require_once 'SMSComm.php';
+require_once 'Volunteer-Model (1).php';
+require_once 'Patient-Model.php';
+
 class CommunicationFacade {
     private ?Email $email;
     private ?SMS $sms;
+    private ?SocialMedia $socialMedia;
     private Person $person;
     private ?Subject $event;
     private ?Receipt $receipt;
     private ?Certificate $certificate;
     private ?Ticket $ticket;
 
-    public function __construct(?Email $email = null,?SMS $sms = null, Person $person, ?Subject $event = null, ?Receipt $receipt = null, ?Certificate $certificate = null, ?Ticket $ticket = null) {
+
+    public function __construct(?Email $email = null,?SMS $sms = null,?SocialMedia $socialMedia = null, Person $person, ?Subject $event = null, ?Receipt $receipt = null, ?Certificate $certificate = null, ?Ticket $ticket = null) {
         $this->email =$email;
         $this->sms = $sms;
+        $this->socialMedia = $socialMedia;
         $this->person = $person; 
         $this->event = $event;
         $this->receipt = $receipt;
@@ -28,6 +34,7 @@ class CommunicationFacade {
     private function sendCommunication(string $message, string $type): bool {
         $emailResult = true;
         $smsResult = true;
+        $socialresult = true;
         if ($type === "email" || $type === "both") {
             $emailDetails = $this->prepareEmailDetails(
                 $this->person->getEmail(),
@@ -42,8 +49,12 @@ class CommunicationFacade {
             $this->simulateSMS($message, $this->person->getPhone());
             $smsResult = $this->sms->send_communication($message, $this->person, $this->event);
         }
+        if ($type === "social_media" && $this->socialMedia) {
+            $this->simulateSocial($message, $this->socialMedia->getPlatform(), $this->person->getEmail());
+            $socialresult = $this->socialMedia->send_communication($message, $this->person, $this->event);
+        }
     
-        return $emailResult && $smsResult;
+        return $emailResult && $smsResult && $socialresult;
 
     }
     private function prepareEmailDetails(string $to, string $subject, string $message): array {
@@ -69,7 +80,7 @@ class CommunicationFacade {
     // }
     private function simulateEmail(array $emailDetails): bool {
         $userEmail = str_replace('@', '_', $emailDetails['to']);
-        $userEmail = str_replace('.', '_', $userEmail); // Sanitize the email for file naming
+        $userEmail = str_replace('.', '_', $userEmail); 
         $logFile = __DIR__ . "/email_logs/{$userEmail}_email_log.txt";
     
         $logContent = "To: " . $emailDetails['to'] . "\n" .
@@ -78,7 +89,7 @@ class CommunicationFacade {
                       "----------------------------------------\n";
     
         if (!is_dir(__DIR__ . '/email_logs')) {
-            mkdir(__DIR__ . '/email_logs', 0777, true); // Ensure the directory exists
+            mkdir(__DIR__ . '/email_logs', 0777, true); 
         }
     
         file_put_contents($logFile, $logContent, FILE_APPEND);
@@ -104,7 +115,7 @@ class CommunicationFacade {
     //     return false;
     // }
     private function simulateSMS(string $message, string $phone): bool {
-        $phoneSanitized = preg_replace('/\D/', '', $phone); // Remove non-digit characters
+        $phoneSanitized = preg_replace('/\D/', '', $phone); 
         $logFile = __DIR__ . "/sms_logs/{$phoneSanitized}_sms_log.txt";
     
         $logContent = "To: " . $phone . "\n" .
@@ -112,12 +123,26 @@ class CommunicationFacade {
                       "----------------------------------------\n";
     
         if (!is_dir(__DIR__ . '/sms_logs')) {
-            mkdir(__DIR__ . '/sms_logs', 0777, true); // Ensure the directory exists
+            mkdir(__DIR__ . '/sms_logs', 0777, true); 
         }
     
         file_put_contents($logFile, $logContent, FILE_APPEND);
     
         return true;
+    }
+    private function simulateSocial(string $message, PlatformType $platform, string $email): void {
+        $logFile = __DIR__ . "/social_media_logs/{$platform->value}_social_log.txt";
+    
+        $logContent = "Platform: " . $platform->value . "\n" .
+                      "Email: " . $email . "\n" .
+                      "Message:\n" . $message . "\n" .
+                      "----------------------------------------\n";
+    
+        if (!is_dir(__DIR__ . '/social_media_logs')) {
+            mkdir(__DIR__ . '/social_media_logs', 0777, true);
+        }
+    
+        file_put_contents($logFile, $logContent, FILE_APPEND);
     }
     
     public function sendEventParticipationThankYou(string $type = "both"): bool {
@@ -125,7 +150,6 @@ class CommunicationFacade {
             $message = "Thank you for participating in the event!";
             return $this->sendCommunication($message, $type);
         }
-        echo "Error: Person or Event is not set.";
         return false;
     }
 
@@ -157,7 +181,6 @@ class CommunicationFacade {
         //         type: EventType::Other
         //     ));
         // }
-        echo "Error: Receipt is not set.";
         return false;
     }
 
@@ -166,7 +189,6 @@ class CommunicationFacade {
             $certificateContent = $this->certificate->generateCertificateContent();
             return $this->sendCommunication($certificateContent, $type);
         }
-        echo "Error: Certificate or Event is not set.";
         return false;
     }
     public function sendTicketSMS(): bool {
@@ -176,18 +198,70 @@ class CommunicationFacade {
             $eventDate = $this->ticket->getDateTime()->format('Y-m-d H:i:s');
             $patientPhone = $this->person->getPhone();
             if (empty($patientPhone)) {
-                echo "Error: Patient phone number is not set.";
                 return false;
             }
             $ticketMessage = "Dear $patientName, your ticket for the event $eventName has been confirmed. Event Date: $eventDate";
             return $this->sendCommunication($ticketMessage, "sms");
         }
         
-    
-        echo "Error: Ticket, Person, or Event is not set.";
+
         return false;
     }
+    public function sendEventArticle(string $type): bool {
+        if (!$this->event) {
+
+            return false;
+        }
     
+        $article = $this->generateEventArticleList();
+        $recipients = $this->getRecipients(); // Fetch volunteers and patients
+        $success = true;
+    
+        foreach ($recipients as $recipient) {
+            $this->person = $recipient; // Set the current recipient
+            $result = $this->sendCommunication($article, $type);
+            $success = $success && $result; // Combine results to check overall success
+        }
+    
+        return $success;
+    }
+    private function generateEventArticleList(): string {
+        $eventsModel = new EventsModel();
+        $events = $eventsModel->getUpcomingEvents();
+    
+        if (empty($events)) {
+            return "No upcoming events available at this time.";
+        }
+    
+        $article = "Upcoming Events:\n";
+        foreach ($events as $event) {
+            $article .= "----------------------------------------\n";
+            $article .= "Name: " . $event->getName() . "\n";
+            $article .= "Description: " . $event->getDescription() . "\n";
+            $article .= "Date: " . $event->getDateTime()->format('Y-m-d H:i:s') . "\n";
+            $article .= "Location ID: " . $event->getLocationID() . "\n";
+            $article .= "----------------------------------------\n";
+        }
+    
+        return $article;
+    }
+    private function getRecipients(): array {
+        $recipients = [];
+    
+        // Fetch volunteers
+        $volunteersModel = new Volunteer();
+        $volunteers = $volunteersModel->getAllVolunteers();
+        $recipients = array_merge($recipients, $volunteers);
+    
+        // Fetch patients
+        $patientsModel = new Patient();
+        $patients = $patientsModel->getAllPatients();
+        $recipients = array_merge($recipients, $patients);
+    
+        return $recipients;
+    }
+    
+ 
       
 }
 
