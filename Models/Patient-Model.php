@@ -11,13 +11,13 @@ class Patient extends Person {
     protected $needs;
     protected $nationalId;
     protected $needslist=[];
-
+    private $dbProxy;
 
     public function __construct($id = null, $personId = null, $name = "", $needs = "", $nationalId = null,
                                  $age = 0,  $medicalHistory = "", $needslist = [],
-                                 $password = "", $email = "", $addressId = null, $IsDeleted = false) {
+                                 $password = "", $email = "", $addressId = null, $IsDeleted = false,$phone = "" ) {
         // Initialize the parent class (Person)
-        parent::__construct($id, $name, $age, $password, $email, $addressId, $IsDeleted);
+        parent::__construct($id, $name, $age, $password, $email, $addressId, $IsDeleted, $phone);
         $this->dbProxy = new DBProxy($name); 
         $this->personId = $personId;
         $this->medicalHistory = $medicalHistory;
