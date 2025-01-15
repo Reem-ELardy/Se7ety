@@ -11,10 +11,11 @@ abstract class Person {
     protected $email;
     protected $addressId;
     protected $IsDeleted;
-    protected $dbProxy;
+    protected $phone;
+    private $dbProxy;
 
 
-    public function __construct($id = null, $name = "", $age = 0, $password = "", $email = "", $addressId = null,$IsDeleted=0) {
+    public function __construct($id = null, $name = "", $age = 0, $password = "", $email = "", $addressId = null, $IsDeleted=0, $phone = "") {
         $this->id = $id;
         $this->name = $name;
         $this->age = $age;
@@ -22,6 +23,7 @@ abstract class Person {
         $this->email = $email;
         $this->addressId = $addressId;
         $this->IsDeleted = $IsDeleted;
+        $this->phone = $phone;
         $this->dbProxy = new DBProxy($name);
 
     }
@@ -80,9 +82,16 @@ abstract class Person {
     public function getIsDeleted($IsDeleted) {
         return $this->IsDeleted;    
     }
+    public function getPhone() {
+        return $this->phone;
+    }
+
+    public function setPhone($phone) {
+        $this->phone = $phone;
+    }
 
     public function updatePerson(array $param) {
-        $query = "UPDATE Person SET Name = ?, Age = ?, Password = ?, Email = ?, AddressID = ? WHERE ID = ?";
+        $query = "UPDATE Person SET Name = ?, Age = ?, Password = ?, Email = ?, AddressID = ? , Phone = ? WHERE ID = ?";
         $stmt = $this->dbProxy->prepare($query, $param);
         if (!$stmt) {
             return false;
@@ -96,8 +105,8 @@ abstract class Person {
             return false;
         }
     
-        $query = "INSERT INTO Person (Name, Age, Password, Email, AddressID) VALUES (?, ?, ?, ?, ?)";
-        $stmt = $this->dbProxy->prepare($query, [$this->name, $this->age, $this->password, $this->email, $this->addressId]);
+        $query = "INSERT INTO Person (Name, Age, Password, Email, AddressID, Phone) VALUES (?, ?, ?, ?, ?,?)";
+        $stmt = $this->dbProxy->prepare($query, [$this->name, $this->age, $this->password, $this->email, $this->addressId, $this->phone]);
     
         if (!$stmt) {
             return false;
