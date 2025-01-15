@@ -17,7 +17,7 @@ class Ticket {
 
         if ($eventID != 0 && $patientID != 0) {
             $this->fetchEventDetails($eventID);
-            $this->fetchVolunteerName($patientID);
+            $this->fetchPatientName($patientID);
         }
     }
 
@@ -41,17 +41,30 @@ class Ticket {
         $this->patientID = $patientID;
     }
 
-    public function getPatientID() {
-        return $this->patientID;
+    public function setPatientName(string $name): void {
+        $this->Patient_Name = $name;
     }
-
     public function setDateTime(DateTime $dateTime) {
         $this->dateTime = $dateTime;
+    }
+    public function setEventName(string $name): void {
+        $this->Event_Name = $name;
+    }
+
+    public function getPatientID() {
+        return $this->patientID;
     }
 
     public function getDateTime() {
         return $this->dateTime;
     }
+    public function getPatientName(): string {
+        return $this->Patient_Name;
+    }
+    public function getEventName(): string {
+        return $this->Event_Name;
+    }
+    
 
     public function createTicket() {
         $conn = DBConnection::getInstance()->getConnection();
@@ -147,7 +160,7 @@ class Ticket {
         if ($stmt) {
             $stmt->bind_param("i", $eventID);
             $stmt->execute();
-            $stmt->bind_result($this->Event_Name, $eventDate);
+            $stmt->bind_result($eventName, $eventDate);
 
             if ($stmt->fetch()) {
                 $this->Event_Name = $eventName;
@@ -162,7 +175,7 @@ class Ticket {
         }
     }
 
-    private function fetchVolunteerName(int $PatientID): void {
+    private function fetchPatientName(int $PatientID): void {
         $conn = DBConnection::getInstance()->getConnection();
 
         $query = "SELECT Name 
@@ -177,10 +190,9 @@ class Ticket {
             $stmt->bind_result($PatientName);
 
             if ($stmt->fetch()) {
-                // Volunteer name is now set in the class
                 $this->Patient_Name = $PatientName;
             } else {
-                $this->Patient_Name = 'Unknown Volunteer';
+                $this->Patient_Name = 'Unknown Patient';
             }
 
 
