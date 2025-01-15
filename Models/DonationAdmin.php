@@ -2,10 +2,10 @@
 require_once 'Admin.php';
 require_once 'Medical.php';
 require_once 'Patient-need.php';
-require_once 'PatientNeedStateFactory.php';
-
+require_once __DIR__ . '/../DB-creation/DBProxy.php';
 
 class DonationAdmin extends Admin {
+
     public function __construct(
         $id = null,
         $name = "",
@@ -15,54 +15,53 @@ class DonationAdmin extends Admin {
         $addressId = null,
         $isDeleted = false
     ) {
+        // Set the role as DonationAdmin
         parent::__construct($id, $name, $age, $password, $email, $addressId, $isDeleted, Role::DonationAdmin);
+        $this->dbProxy = new DBProxy($name); // Initialize the DBProxy
+    }
+
+    public function createDonationAdmin(): bool {
+        // Use the inherited createAdmin method to insert into Person and Admin tables
+        return $this->createAdmin();
     }
 
     /**
-     * Check if a medical item is available in the database by its ID.
+     * Check if a specific medicine is available in the database.
      *
      * @param int $medicalID The ID of the medical item.
-     * @return bool True if the medical item is available, false otherwise.
+     * @return bool True if the medicine is available, false otherwise.
      */
     public function isMedicineAvailable(int $medicalID): bool {
-        $medical = new Medical();
+        $query = "SELECT Quantity FROM Medical WHERE ID = ?";
+        $stmt = $this->dbProxy->prepare($query, [$medicalID]); // Use proxy for database interaction
 
-        if ($medical->FindMedicalNameByID($medicalID)) {
-            $type = $medical->getType();
-
-            if ($type instanceof MedicalType) {
-                echo "Medicine Found: Name = {$medical->getName()}, Type = {$type->value}, Quantity = {$medical->getQuantity()}\n";
-            } else {
-                echo "Medicine Found: Name = {$medical->getName()}, Type = Unknown, Quantity = {$medical->getQuantity()}\n";
+        if ($stmt) {
+            $stmt->bind_result($quantity);
+            if ($stmt->fetch()) {
+                return $quantity > 0; // Return true if quantity is greater than zero
             }
-
-            return $medical->getQuantity() > 0;
-        } else {
-            echo "Medicine with ID '{$medicalID}' not found in the database.\n";
-            return false;
         }
+
+        return false; // Medicine not found or no quantity available
     }
-    
 
-   /**
- * Process a PatientNeed request based on the requested medicine ID.
- *
- * @param PatientNeed $patientNeed The PatientNeed object to process.
- */
-public function processPatientNeed(PatientNeed $patientNeed): void {
-    echo "Processing PatientNeed (PatientID: {$patientNeed->getPatientID()})...\n";
+    /**
+     * Process a PatientNeed request and transition its state.
+     *
+     * @param PatientNeed $patientNeed The PatientNeed object to process.
+     */
+    public function processPatientNeed(PatientNeed $patientNeed): void {
+        // Ensure the state is transitioned properly
+        $patientNeed->processPatientNeed($this);
 
-    $patientNeed->handleRequest($this);
-
-    $updatedStatus = $patientNeed->getStatus();
-
-    $patientNeed->setState(PatientNeedStateFactory::create($updatedStatus));
-
-    $patientNeed->updatePatientNeed();
-
-    echo "Updated Status: {$patientNeed->getStatus()->value}\n";
-    echo "Updated State: " . get_class($patientNeed->getState()) . "\n";
-}
+        // Persist changes in the database using the proxy
+        $query = "UPDATE PatientNeed SET Status = ? WHERE MedicalID = ? AND PatientID = ? AND IsDeleted = 0";
+        $this->dbProxy->prepare($query, [
+            $patientNeed->getStatus()->value,
+            $patientNeed->getMedicalID(),
+            $patientNeed->getPatientID()
+        ]);
+    }
 
     /**
      * Retrieve all PatientNeeds from the database.
@@ -70,34 +69,35 @@ public function processPatientNeed(PatientNeed $patientNeed): void {
      * @return array An array of PatientNeed objects.
      */
     public function retrieveAllPatientNeeds(): array {
-        $conn = DBConnection::getInstance()->getConnection();
         $query = "SELECT MedicalID, PatientID, Status FROM PatientNeed WHERE IsDeleted = 0";
-        $stmt = $conn->prepare($query);
+        $stmt = $this->dbProxy->prepare($query, []); // Pass query with an empty parameters array
+
 
         if (!$stmt) {
-            echo "Error preparing statement: " . $conn->error . "\n";
-            return [];
+            return []; // Return an empty array if the statement couldn't be prepared
         }
+
         $stmt->execute();
         $result = $stmt->get_result();
 
         $patientNeeds = [];
         while ($row = $result->fetch_assoc()) {
             try {
-  
-                $statusEnum = Status::from($row['Status']);
-            } catch (ValueError $e) {
-                echo "Error: Invalid status value '{$row['Status']}' in the database.\n";
-                continue;
+                $statusEnum = Status::from($row['Status']); // Convert status to enum
+            } catch (ValueError) {
+                continue; // Skip invalid statuses
             }
-            $patientNeed = new PatientNeed($row['MedicalID'], $row['PatientID']);
-            $patientNeed->setStatus($statusEnum);
 
-            $patientNeeds[] = $patientNeed;
+            $patientNeed = new PatientNeed(
+                (int)$row['MedicalID'],
+                (int)$row['PatientID'],
+                $statusEnum
+            );
+            $patientNeeds[] = $patientNeed; // Add to the list of needs
         }
+
         $stmt->close();
         return $patientNeeds;
     }
-
-   
 }
+?>
