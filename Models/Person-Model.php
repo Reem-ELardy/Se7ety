@@ -11,11 +11,10 @@ abstract class Person {
     protected $email;
     protected $addressId;
     protected $IsDeleted;
-    protected $phone;
-    private $dbProxy;
+    protected $dbProxy;
 
 
-    public function __construct($id = null, $name = "", $age = 0, $password = "", $email = "", $addressId = null,$IsDeleted=0,$phone = "") {
+    public function __construct($id = null, $name = "", $age = 0, $password = "", $email = "", $addressId = null,$IsDeleted=0) {
         $this->id = $id;
         $this->name = $name;
         $this->age = $age;
@@ -23,7 +22,6 @@ abstract class Person {
         $this->email = $email;
         $this->addressId = $addressId;
         $this->IsDeleted = $IsDeleted;
-        $this->phone = $phone;
         $this->dbProxy = new DBProxy($name);
 
     }
@@ -81,13 +79,6 @@ abstract class Person {
     }
     public function getIsDeleted($IsDeleted) {
         return $this->IsDeleted;    
-    }
-    public function getPhone() {
-        return $this->phone;
-    }
-
-    public function setPhone($phone) {
-        $this->phone = $phone;
     }
 
     public function updatePerson(array $param) {
