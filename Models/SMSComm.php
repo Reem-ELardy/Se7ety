@@ -3,7 +3,6 @@
 class SMS implements ICommunicationStrategy{
 
     function send_communication(string $message, Person $person, Subject $event) {
-        echo "Sending Email to {$person->getName()}: $message\n";
             $recipientPhone = $person->getPhone(); 
             if (!$recipientPhone) {
                 return false;
