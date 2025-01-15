@@ -241,12 +241,18 @@ class Event implements Subject {
         $this->isDeleted = 1;
         $result = $stmt->execute();
         $stmt->close();
+        
+        // Refresh observers from DB
         $this->getEventObservers();
-        foreach ($this->observers as $observer) {
+        
+        $iterator = $this->createObserversIterator();
+        foreach ($iterator as $observer) {
             $this->removeObserver($observer); 
         }
-
+    
+        return $result;
     }
+    
 
 
     public function registerObserver(Observer $o): void {
