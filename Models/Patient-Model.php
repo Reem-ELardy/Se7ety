@@ -81,7 +81,6 @@ class Patient extends Person {
             $this->personId = $personId; 
         }
 
-        // Create Volunteer record
         $query = "INSERT INTO Patient (PersonID) VALUES (?)";
 
         $stmt = $this->dbProxy->prepare($query, [$this->id]);
@@ -98,10 +97,9 @@ class Patient extends Person {
         $personUpdated = $this->updatePerson([$this->name, $this->age, $this->password, $this->email, $this->addressId, $this->personId]);
 
         if (!$personUpdated) {
-            return false;  // Person update failed
+            return false;  
         }
 
-        // Update Volunteer record
         $query = "UPDATE Patient SET PersonID = ? WHERE ID = ?";
         $stmt = $this->dbProxy->prepare($query, [ $this->personId, $this->id]);
 
@@ -228,14 +226,12 @@ class Patient extends Person {
      * @return bool True if the request is created successfully, false otherwise.
      */
     public function createRequest(int $medicalId): bool {
-        $patientNeed = new PatientNeed($medicalId, $this->id); // Create a new PatientNeed instance
-        $patientNeed->setStatus(Status::Waiting); // Default status: Waiting
+        $patientNeed = new PatientNeed($medicalId, $this->id); 
+        $patientNeed->setStatus(Status::Waiting); 
 
-        if ($patientNeed->createPatientNeed()) { // Save the PatientNeed to the database
-            echo "Request created successfully.\n";
+        if ($patientNeed->createPatientNeed()) { 
             return true;
         } else {
-            echo "Failed to create the request.\n";
             return false;
         }
     }
@@ -255,17 +251,14 @@ class Patient extends Person {
         $stmt = $conn->prepare($query);
 
         if (!$stmt) {
-            echo "Error preparing statement: " . $conn->error;
             return null;
         }
 
-        // Bind parameters and execute the query
         $stmt->bind_param("i", $this->id);
         $stmt->execute();
 
         $result = $stmt->get_result();
 
-        // Loop through results and create PatientNeed objects
         $needs = [];
         while ($row = $result->fetch_assoc()) {
             $patientNeed = new PatientNeed($row['Medical_ID'], $this->id);
@@ -274,9 +267,39 @@ class Patient extends Person {
         }
 
         $stmt->close();
-        $this->setNeedslist($needs); // Update the needslist property
+        $this->setNeedslist($needs); 
 
         return $needs;
     }
+
+    public function getAllPatients(): array {
+        $conn = DBConnection::getInstance()->getConnection();
+        $query = "SELECT Person.ID as PersonID, Person.Name, Person.Email, Person.Phone, Patient.ID as PatientID
+                  FROM Patient
+                  INNER JOIN Person ON Patient.PersonID = Person.ID
+                  WHERE Person.IsDeleted = 0";
+    
+        $patients = [];
+        $stmt = $conn->prepare($query);
+    
+        if ($stmt) {
+            $stmt->execute();
+            $result = $stmt->get_result();
+            while ($row = $result->fetch_assoc()) {
+                $patient = new Patient(
+                    id: $row['PatientID'],
+                    personId: $row['PersonID'],
+                    name: $row['Name'],
+                    email: $row['Email'],
+                    phone: $row['Phone']
+                );
+                $patients[] = $patient;
+            }
+            $stmt->close();
+        }
+    
+        return $patients;
+    }
+    
 }
 ?>
