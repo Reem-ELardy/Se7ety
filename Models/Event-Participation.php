@@ -1,5 +1,8 @@
 <?php
 
+require_once "IEventParticipationState.php";
+require_once "EventParticipationPendingState.php";
+
 class EventParticipation{
 
     private int $id;
@@ -9,14 +12,17 @@ class EventParticipation{
     private int $participantHours;
     private int $isDeleted;
     private int $isCompleted;
+    protected IEventParticipationState $state;
 
-    public function __construct(int $volunteerID, int $eventID, string $role, int $participantHours) {
+    public function __construct(int $volunteerID = 0, int $eventID = 0, string $role = '', int $participantHours = 0) {
+        $this->id = 0;
         $this->volunteerID = $volunteerID;
         $this->eventID = $eventID;
         $this->role = $role;
         $this->participantHours = $participantHours;
         $this->isDeleted = 0;
         $this->isCompleted = 0;
+        $this->state = new ParticipationPendingState();
     }
 
     // Getters and setters for the attributes
@@ -76,7 +82,14 @@ class EventParticipation{
         $this->isCompleted = $isCompleted;
     }
 
-    
+    public function SetState($state){
+        $this->state=$state;
+    }
+
+    public function ProcessParticipation(): void{
+        $this->state->ProsscingParticipation($this);
+    }
+
     public function createEventParticipation(): bool {
         $conn = DBConnection::getInstance()->getConnection();
     
@@ -89,12 +102,13 @@ class EventParticipation{
         }
     
         // Bind parameters including the new attributes 'IsDeleted' and 'IsCompleted'
-        $stmt->bind_param("iisis", $this->volunteerID, $this->eventID, $this->role, $this->participantHours, $this->isDeleted, $this->isCompleted);
+        $stmt->bind_param("iisiii", $this->volunteerID, $this->eventID, $this->role, $this->participantHours, $this->isDeleted, $this->isCompleted);
         $result = $stmt->execute();
         
         if ($result) {
             // After successful execution, update the 'id' of the object with the generated ID from the database
             $this->id = $conn->insert_id;
+            $stmt->close();
         }
     
         return $result;
@@ -166,12 +180,13 @@ class EventParticipation{
         // Bind the ID parameter
         $stmt->bind_param("i", $this->id);
         $result = $stmt->execute();
+        $stmt->close();
     
         return $result;
     }
 
     public function GenerateCertificate(){
-        $certificate  = new Certificate($this->volunteerID, $this->eventID);
+        $certificate  = new Certificate( $this->eventID, $this->volunteerID);
         $certificate->createCertificate();
     }
 
@@ -186,19 +201,24 @@ class EventParticipation{
 
         $stmt->bind_param("i", $this->id);
         $stmt->execute();
+        $stmt->close();
 
-        $this->updateVolunteerHours($this->volunteerID, $this->participantHours);
-        $this->GenerateCertificate();
 
         $this->isCompleted = 1;
 
         return true; 
     }
 
-    private function updateVolunteerHours() {
+    public function finishParticipation() {
+        $this->state->NextState($this);
+        $this->ProcessParticipation();
+
+    }
+
+    public function updateVolunteerHours() {
         $conn = DBConnection::getInstance()->getConnection();
 
-        $query = "UPDATE Volunteer SET VolunteerHours = VolunteerHours + ? WHERE ID = ? AND IsDeleted = 0";
+        $query = "UPDATE Volunteer SET VolunteerHours = VolunteerHours + ? WHERE ID = ?";
         $stmt = $conn->prepare($query);
         if (!$stmt) {
             return false;
@@ -206,87 +226,13 @@ class EventParticipation{
 
         $stmt->bind_param("ii", $this->participantHours, $this->volunteerID);
         $stmt->execute();
+        $stmt->close();
 
         return true; 
     }
 
 
 }
-
-
-class PatientEvent {
-    private int $eventID;
-    private int $patientID;
-    private int $isDeleted;
-
-
-    public function __construct(int $eventID, int $patientID) {
-        $this->eventID = $eventID;
-        $this->patientID = $patientID;
-        $this->isDeleted = 0; 
-    }
-
-    public function create(): bool {
-        $conn = DBConnection::getInstance()->getConnection();
-
-        $query = "INSERT INTO PatientEvent (EventID, PatientID, IsDeleted) VALUES (?, ?, 0)";
-        $stmt = $conn->prepare($query);
-        if (!$stmt) {
-            return false;
-        }
- 
-        $stmt->bind_param("ii", $this->eventID, $this->patientID);
-        $result = $stmt->execute();
-        $stmt->close();
-        
-        return $result;
-    }
-
-
-    public function delete(): bool {
-        $conn = DBConnection::getInstance()->getConnection();
-
-        $query = "UPDATE PatientEvent SET IsDeleted = 1 WHERE EventID = ? AND PatientID = ?";
-        $stmt = $conn->prepare($query);
-        if (!$stmt) {
-            return false;
-        }
-
-        $stmt->bind_param("ii", $this->eventID, $this->patientID);
-        $result = $stmt->execute();
-        $stmt->close();
-
-        $this-> isDeleted = 1;
-
-        return $result;
-    }
-
-
-    public function read(int $eventId, int $patientId): bool {
-        $conn = DBConnection::getInstance()->getConnection();
-
-        $query = "SELECT EventID, PatientID, IsDeleted FROM PatientEvent WHERE EventID = ? AND PatientID = ?";
-        $stmt = $conn->prepare($query);
-        if (!$stmt) {
-            return false;
-        }
-
-        $stmt->bind_param("ii", $eventId, $patientId);
-        $stmt->execute();
-
-        $stmt->bind_result($this->eventID, $this->patientID, $this->isDeleted);
-        if ($stmt->fetch()) {
-            $stmt->close();
-            return true;
-        } else {
-            $stmt->close();
-            return false; 
-        }
-    }
-
-}
-
-
 
 
 ?>

@@ -11,6 +11,10 @@ class Certificate {
     public function __construct(int $eventID, int $volunteerID) {
         $this->eventID = $eventID;
         $this->volunteerID = $volunteerID;
+        $this->ID = 0;
+        $this->Event_Name = '';
+        $this->Event_Date = new DateTime();
+        $this->Volunteer_Name = '';
 
         if ($eventID != 0 && $volunteerID != 0) {
             $this->fetchEventDetails($eventID);
@@ -131,27 +135,27 @@ class Certificate {
         return false;
     }
 
-    // public function getCertificatesByVolunteerId(int $volunteerId): ?array {
-    //     $conn = DBConnection::getInstance()->getConnection();
-    //     $sql = "SELECT * FROM Certificate WHERE VolunteerID = ? AND IsDeleted = 0";
-    //     $stmt = $conn->prepare($sql);
+    public function getCertificatesByVolunteerId(int $volunteerId): ?array {
+        $conn = DBConnection::getInstance()->getConnection();
+        $sql = "SELECT * FROM Certificate WHERE VolunteerID = ? AND IsDeleted = 0";
+        $stmt = $conn->prepare($sql);
 
-    //     if ($stmt) {
-    //         $stmt->bind_param('i', $volunteerId);
-    //         if ($stmt->execute()) {
-    //             $result = $stmt->get_result();
-    //             $certificates = [];
-    //             while ($row = $result->fetch_assoc()) {
-    //                 $certificates[] = $row;
-    //             }
-    //             $stmt->close();
-    //             return $certificates;
-    //         }
-    //         $stmt->close();
-    //     }
+        if ($stmt) {
+            $stmt->bind_param('i', $volunteerId);
+            if ($stmt->execute()) {
+                $result = $stmt->get_result();
+                $certificates = [];
+                while ($row = $result->fetch_assoc()) {
+                    $certificates[] = $row;
+                }
+                $stmt->close();
+                return $certificates;
+            }
+            $stmt->close();
+        }
 
-    //     return null;
-    // }
+        return null;
+    }
 
     public function deleteCertificate(): bool {
         $conn = DBConnection::getInstance()->getConnection();
@@ -175,6 +179,7 @@ class Certificate {
 
         $query = "SELECT Name, Date FROM Event WHERE ID = ?";
         $stmt = $conn->prepare($query);
+        $eventName = ''; 
         $eventDate = '';
         if ($stmt) {
             $stmt->bind_param("i", $eventID);
@@ -182,8 +187,13 @@ class Certificate {
             $stmt->bind_result($this->Event_Name, $eventDate);
 
             if ($stmt->fetch()) {
-                $this->Event_Date = new DateTime($eventDate);  
+                $this->Event_Name = $eventName;
+                $this->Event_Date = new DateTime($eventDate);
+            } else {
+                $this->Event_Name = 'Unknown Event';
+                $this->Event_Date = new DateTime();
             }
+
 
             $stmt->close();
         }
@@ -192,19 +202,24 @@ class Certificate {
     private function fetchVolunteerName(int $volunteerID): void {
         $conn = DBConnection::getInstance()->getConnection();
 
-        $query = "SELECT CONCAT_WS(' ', Person.FirstName, Person.LastName) 
+        $query = "SELECT Name 
                     FROM Volunteer 
                     JOIN Person ON Volunteer.PersonID = Person.ID 
                     WHERE Volunteer.ID = ?";
         $stmt = $conn->prepare($query);
+        $volunteerName = '';
         if ($stmt) {
             $stmt->bind_param("i", $volunteerID);
             $stmt->execute();
-            $stmt->bind_result($this->Volunteer_Name);
+            $stmt->bind_result($volunteerName);
 
             if ($stmt->fetch()) {
                 // Volunteer name is now set in the class
+                $this->Volunteer_Name = $volunteerName;
+            } else {
+                $this->Volunteer_Name = 'Unknown Volunteer';
             }
+
 
             $stmt->close();
         }

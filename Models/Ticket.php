@@ -5,11 +5,20 @@ class Ticket {
     private $eventID;
     private $patientID;
     private $dateTime;
+    private string $Event_Name;
+    private string $Patient_Name;
 
     public function __construct($eventID, $patientID, DateTime $dateTime = null) {
         $this->eventID = $eventID;
         $this->patientID = $patientID;
         $this->dateTime = $dateTime;
+        $this->Event_Name = '';
+        $this->Patient_Name = '';
+
+        if ($eventID != 0 && $patientID != 0) {
+            $this->fetchEventDetails($eventID);
+            $this->fetchVolunteerName($patientID);
+        }
     }
 
     public function setID($id) {
@@ -126,6 +135,57 @@ class Ticket {
         $stmt->bind_param("i", $this->id);
     
         return $stmt->execute();
+    }
+
+    private function fetchEventDetails(int $eventID): void {
+        $conn = DBConnection::getInstance()->getConnection();
+
+        $query = "SELECT Name, Date FROM Event WHERE ID = ?";
+        $stmt = $conn->prepare($query);
+        $eventName = ''; 
+        $eventDate = '';
+        if ($stmt) {
+            $stmt->bind_param("i", $eventID);
+            $stmt->execute();
+            $stmt->bind_result($this->Event_Name, $eventDate);
+
+            if ($stmt->fetch()) {
+                $this->Event_Name = $eventName;
+                $this->dateTime = new DateTime($eventDate);
+            } else {
+                $this->Event_Name = 'Unknown Event';
+                $this->dateTime = new DateTime();
+            }
+
+
+            $stmt->close();
+        }
+    }
+
+    private function fetchVolunteerName(int $PatientID): void {
+        $conn = DBConnection::getInstance()->getConnection();
+
+        $query = "SELECT Name 
+                    FROM Patient 
+                    JOIN Person ON Patient.PersonID = Person.ID 
+                    WHERE Patient.ID = ?";
+        $stmt = $conn->prepare($query);
+        $PatientName = '';
+        if ($stmt) {
+            $stmt->bind_param("i", $PatientID);
+            $stmt->execute();
+            $stmt->bind_result($PatientName);
+
+            if ($stmt->fetch()) {
+                // Volunteer name is now set in the class
+                $this->Patient_Name = $PatientName;
+            } else {
+                $this->Patient_Name = 'Unknown Volunteer';
+            }
+
+
+            $stmt->close();
+        }
     }
     
 }

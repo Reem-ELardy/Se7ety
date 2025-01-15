@@ -5,6 +5,8 @@ require_once "Ticket.php";
 require_once "Subject.php";
 require_once "EventReminder.php";
 require_once "Notification.php";
+require_once "Patient-Event.php";
+require_once "Event-Participation.php";
 
 enum EventType: string {
     case DonationCollect = 'Donation-Collect';
