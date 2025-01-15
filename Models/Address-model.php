@@ -113,49 +113,48 @@ class Address {
         }
     }
 
-    public function GetWholeAddressesList(&$addressList) {
+    public function GetWholeAddressesList() {
         $dbConnection = DBConnection::getInstance()->getConnection();
+        $addressList = [];
     
-        $query = "SELECT * FROM Address WHERE ParentAddressID IS NULL";
-        $stmt = $this->getDbProxy()->prepare($query, []);    
-        
+        // Query to get root-level addresses (ParentAddressID is NULL)
+        $query = "SELECT * FROM Address WHERE ParentAddressID IS NULL AND IsDeleted = 0";
+        $stmt = $this->getDbProxy()->prepare($query, []);
         $result = $stmt->get_result();
     
         if (!$result || $result->num_rows === 0) {
             $stmt->close();
-            return false; 
+            return false; // No addresses found
         }
     
         while ($row = $result->fetch_assoc()) {
-            if($row['IsDeleted']==1){continue;};
-            $addressList[$row['ID']] = $row;
-            $addressList[$row['ID']]['children'] = [];
+            $row['children'] = $this->fetchChildren($row['ID']);
+            $addressList[] = $row;
         }
     
-        $stmt->close(); 
-
-        $addressList = array_values($addressList);
-
-        for ($i = 0; $i < count($addressList);  $i++) {
-           
-            $parentId = $addressList[$i]['ID'];
-        
-            $query = "SELECT * FROM Address WHERE ParentAddressID = ?";
-            $stmt = $this->getDbProxy()->prepare($query, [$parentId]);    
-           
-            $childResult = $stmt->get_result();
+        $stmt->close();
     
-            if ($childResult && $childResult->num_rows > 0) {
-                while ($childRow = $childResult->fetch_assoc()) {
-                    if($childRow['IsDeleted']==1){continue;};
-                    $addressList[$i]['children'][] = $childRow; 
-                }
-            }
-    
-            $stmt->close(); 
-        }
-    
-        return true; 
+        // Return an AddressIterator for the collected addresses
+        return new AddressIterator($addressList);
     }
+    
+    private function fetchChildren($parentId) {
+        $children = [];
+    
+        // Query to fetch children addresses
+        $query = "SELECT * FROM Address WHERE ParentAddressID = ? AND IsDeleted = 0";
+        $stmt = $this->getDbProxy()->prepare($query, [$parentId]);
+        $result = $stmt->get_result();
+    
+        while ($row = $result->fetch_assoc()) {
+            $row['children'] = $this->fetchChildren($row['ID']); // Recursively fetch children
+            $children[] = $row;
+        }
+    
+        $stmt->close();
+    
+        return $children;
+    }
+    
 }
 ?>
