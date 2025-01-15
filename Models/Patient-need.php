@@ -16,13 +16,15 @@ class PatientNeed {
     private int $PatientID;
     private Status $status;
     private IPatientNeedState $state;
+    private ?DateTime $acceptedDate; 
     private DBProxy $dbProxy;
 
-    public function __construct(int $MedicalID, int $PatientID, Status $status = Status::Waiting) {
+    public function __construct(int $MedicalID, int $PatientID, Status $status = Status::Waiting, ?DateTime $acceptedDate = null) {
         $this->MedicalID = $MedicalID;
         $this->PatientID = $PatientID;
         $this->status = $status;
-        $this->dbProxy = new DBProxy('PatientNeed'); // Initialize DBProxy
+        $this->acceptedDate = $acceptedDate;
+        $this->dbProxy = new DBProxy('PatientNeed');
         $this->initializeState();
     }
 
@@ -43,8 +45,15 @@ class PatientNeed {
         return $this->state;
     }
 
+    public function getAcceptedDate(): ?DateTime {
+        return $this->acceptedDate;
+    }
+
     // === Setters ===
     public function setStatus(Status $status): void {
+        if ($status === Status::Accepted) {
+            $this->acceptedDate = new DateTime(); // Set acceptedDate when transitioning to Accepted
+        }
         $this->status = $status;
         $this->initializeState(); // Update the state object to match the new status
     }
@@ -75,6 +84,18 @@ class PatientNeed {
     public function completePatientNeed(DonationAdmin $admin): void {
         $this->state->NextState($this);
         $this->processPatientNeed($admin); // Pass the required DonationAdmin instance
+    }
+
+    public function checkAndTransitionState(): void {
+        if ($this->status === Status::Accepted && $this->acceptedDate) {
+            $currentDate = new DateTime();
+            $interval = $currentDate->diff($this->acceptedDate);
+
+            if ($interval->days >= 3) {
+                $this->setStatus(Status::Done); // Transition to Done
+                $this->updatePatientNeed(); // Persist the change
+            }
+        }
     }
 
     // === Database Methods ===
@@ -136,11 +157,12 @@ class PatientNeed {
         if ($row = $result->fetch_assoc()) {
             try {
                 $statusEnum = Status::from($row['Status']);
+                $acceptedDate = $row['AcceptedDate'] ? new DateTime($row['AcceptedDate']) : null;
             } catch (ValueError) {
                 return null; // Invalid status value
             }
 
-            return new self((int)$row['MedicalID'], (int)$row['PatientID'], $statusEnum);
+            return new self((int)$row['MedicalID'], (int)$row['PatientID'], $statusEnum, $acceptedDate);
         }
 
         return null; // No record found
