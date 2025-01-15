@@ -11,7 +11,7 @@ class Patient extends Person {
     protected $needs;
     protected $nationalId;
     protected $needslist=[];
-    private $dbProxy;
+    protected $dbProxy;
 
     public function __construct($id = null, $personId = null, $name = "", $needs = "", $nationalId = null,
                                  $age = 0,  $medicalHistory = "", $needslist = [],
@@ -220,6 +220,63 @@ class Patient extends Person {
         } else {
             return false;
         }
+    }
+    /**
+     * Create a new PatientNeed request.
+     *
+     * @param int $medicalId The ID of the requested medical item.
+     * @return bool True if the request is created successfully, false otherwise.
+     */
+    public function createRequest(int $medicalId): bool {
+        $patientNeed = new PatientNeed($medicalId, $this->id); // Create a new PatientNeed instance
+        $patientNeed->setStatus(Status::Waiting); // Default status: Waiting
+
+        if ($patientNeed->createPatientNeed()) { // Save the PatientNeed to the database
+            echo "Request created successfully.\n";
+            return true;
+        } else {
+            echo "Failed to create the request.\n";
+            return false;
+        }
+    }
+
+    /**
+     * Retrieve all PatientNeeds associated with this patient.
+     *
+     * @return array|null An array of PatientNeeds or null if none are found.
+     */
+    public function retrieveNeeds(): ?array {
+        $conn = DBConnection::getInstance()->getConnection();
+
+        // Query to get all PatientNeeds for this patient
+        $query = "SELECT  Medical_ID, Status 
+                  FROM PatientNeed 
+                  WHERE PatientID = ? AND IsDeleted = 0";
+        $stmt = $conn->prepare($query);
+
+        if (!$stmt) {
+            echo "Error preparing statement: " . $conn->error;
+            return null;
+        }
+
+        // Bind parameters and execute the query
+        $stmt->bind_param("i", $this->id);
+        $stmt->execute();
+
+        $result = $stmt->get_result();
+
+        // Loop through results and create PatientNeed objects
+        $needs = [];
+        while ($row = $result->fetch_assoc()) {
+            $patientNeed = new PatientNeed($row['Medical_ID'], $this->id);
+            $patientNeed->setStatus(Status::from($row['Status']));
+            $needs[] = $patientNeed;
+        }
+
+        $stmt->close();
+        $this->setNeedslist($needs); // Update the needslist property
+
+        return $needs;
     }
 }
 ?>
