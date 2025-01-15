@@ -69,7 +69,7 @@ run_queries_create_DB(
         "CREATE TABLE IF NOT EXISTS $dbname.Communication (
             ID INT PRIMARY KEY AUTO_INCREMENT,
             PersonID INT,
-            Type ENUM('SMS', 'E-Mail'),
+            Type ENUM('SMS', 'E-Mail' , 'SocialMedia'),
             Message TEXT,
             IsDeleted tinyint(1) NOT NULL DEFAULT 0,
             FOREIGN KEY (PersonID) REFERENCES Person(ID)
