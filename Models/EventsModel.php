@@ -9,6 +9,7 @@ public function getAllEvents(): array {
     $conn = DBConnection::getInstance()->getConnection();
     $id = $maxNoOfAttendance = $locationID = $totalNoPatients = $totalNoVolunteers = 0;
     $name = $date = $description = $type = '';
+    $eventType = EventType::Other;
     $events = [];
 
     $query = "SELECT ID, Name, Date, Description, Type, TotalNoPatients, TotalNoVolunteers, MaxNoOfAttendance, LocationID 
@@ -21,15 +22,16 @@ public function getAllEvents(): array {
 
     $stmt->execute();
     $stmt->bind_result($id, $name, $date, $description, $type, $totalNoPatients, $totalNoVolunteers, $maxNoOfAttendance, $locationID);
-    $type = match($type) {
-        'Donation-Collect' => EventType::DonationCollect,
-        'Medical-Tour' => EventType::MedicalTour,
-        'Other' => EventType::Other,
-        default => throw new InvalidArgumentException("Invalid event type: $type"),
-    };
     $date_time = new DateTime($date);
     while ($stmt->fetch()) {
-        $event = new Event($id, $name, $locationID, $date_time, $description, $maxNoOfAttendance, $type);
+        if ($type == "Donation-Collect") {
+            $eventType = EventType::DonationCollect;
+        } elseif ($type == "Medical-Tour") {
+            $eventType = EventType::MedicalTour;
+        } else{
+            $eventType = EventType::Other;
+        }
+        $event = new Event($id, $name, $locationID, $date_time, $description, $maxNoOfAttendance, $eventType);
         $event->setNoOfPatients($totalNoPatients);
         $event->setNoOfVolunteers($totalNoVolunteers);
         $events[] = $event;
@@ -44,6 +46,7 @@ public function getNonDeletedEvents(): array {
     $conn = DBConnection::getInstance()->getConnection();
     $id = $maxNoOfAttendance = $locationID = $totalNoPatients = $totalNoVolunteers = 0;
     $name = $date = $description = $type = '';
+    $eventType = EventType::Other;
     $events = [];
 
     $query = "SELECT ID, Name, Date, Description, Type, TotalNoPatients, TotalNoVolunteers, MaxNoOfAttendance, LocationID 
@@ -56,15 +59,16 @@ public function getNonDeletedEvents(): array {
 
     $stmt->execute();
     $stmt->bind_result($id, $name, $date, $description, $type, $totalNoPatients, $totalNoVolunteers, $maxNoOfAttendance, $locationID);
-    $type = match($type) {
-        'Donation-Collect' => EventType::DonationCollect,
-        'Medical-Tour' => EventType::MedicalTour,
-        'Other' => EventType::Other,
-        default => throw new InvalidArgumentException("Invalid event type: $type"),
-    };
     $date_time = new DateTime($date);
     while ($stmt->fetch()) {
-        $event = new Event($id, $name, $locationID, $date_time, $description, $maxNoOfAttendance, $type);
+        if ($type === 'Donation-Collect') {
+            $eventType = EventType::DonationCollect;
+        } elseif ($type === 'Medical-Tour') {
+            $eventType = EventType::MedicalTour;
+        } else{
+            $eventType = EventType::Other;
+        }
+        $event = new Event($id, $name, $locationID, $date_time, $description, $maxNoOfAttendance, $eventType);
         $event->setNoOfPatients($totalNoPatients);
         $event->setNoOfVolunteers($totalNoVolunteers);
         $events[] = $event;
@@ -79,6 +83,7 @@ public function getUpcomingEvents(): array {
     $conn = DBConnection::getInstance()->getConnection();
     $id = $maxNoOfAttendance = $locationID = $totalNoPatients = $totalNoVolunteers = 0;
     $name = $date = $description = $type = '';
+    $eventType = EventType::Other;
     $events = [];
 
     $query = "SELECT ID, Name, Date, Description, Type, TotalNoPatients, TotalNoVolunteers, MaxNoOfAttendance, LocationID 
@@ -91,15 +96,17 @@ public function getUpcomingEvents(): array {
 
     $stmt->execute();
     $stmt->bind_result($id, $name, $date, $description, $type, $totalNoPatients, $totalNoVolunteers, $maxNoOfAttendance, $locationID);
-    $type = match($type) {
-        'Donation-Collect' => EventType::DonationCollect,
-        'Medical-Tour' => EventType::MedicalTour,
-        'Other' => EventType::Other,
-        default => throw new InvalidArgumentException("Invalid event type: $type"),
-    };
+   
     $date_time = new DateTime($date);
     while ($stmt->fetch()) {
-        $event = new Event($id, $name, $locationID, $date_time, $description, $maxNoOfAttendance, $type);
+        if ($type === 'Donation-Collect') {
+            $eventType = EventType::DonationCollect;
+        } elseif ($type === 'Medical-Tour') {
+            $eventType = EventType::MedicalTour;
+        } else{
+            $eventType = EventType::Other;
+        }
+        $event = new Event($id, $name, $locationID, $date_time, $description, $maxNoOfAttendance, $eventType);
         $event->setNoOfPatients($totalNoPatients);
         $event->setNoOfVolunteers($totalNoVolunteers);
         $events[] = $event;
