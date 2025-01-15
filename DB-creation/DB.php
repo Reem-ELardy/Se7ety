@@ -25,6 +25,7 @@ run_queries_create_DB(
             Password VARCHAR(50),
             Email VARCHAR(50),
             AddressID INT,
+            Phone VARCHAR(15),
             IsDeleted tinyint(1) NOT NULL DEFAULT 0,
             FOREIGN KEY (AddressID) REFERENCES Address(ID)
         )",
