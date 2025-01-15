@@ -274,3 +274,41 @@ hr {
 .submit-button:hover {
   background-color: #388e3c;
 }
+
+ /* Additional styles for the receipt page */
+ .receipt-container {
+  margin: 20px 0;
+  padding: 20px;
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  background-color: #f9f9f9;
+  text-align: left;
+}
+
+.receipt-container h2 {
+  color: #007bff;
+}
+
+.receipt-details {
+  margin: 10px 0;
+}
+
+.receipt-details strong {
+  display: inline-block;
+  width: 150px;
+}
+
+.back-button {
+  margin-top: 20px;
+  background-color: #4caf50;
+  color: white;
+  padding: 10px 15px;
+  border: none;
+  border-radius: 5px;
+  font-size: 16px;
+  cursor: pointer;
+}
+
+.back-button:hover {
+  background-color: #388e3c;
+}

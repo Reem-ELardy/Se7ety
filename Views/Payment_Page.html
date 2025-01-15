@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Payment</title>
+    <link rel="stylesheet" href="style_Home.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Payment</h1>
+        </header>
+
+        <section class="payment-methods">
+            <h3>Select Payment Method</h3>
+            <form id="payment-form">
+                <div class="form-group">
+                    <label>
+                        <input type="radio" name="payment-method" value="cash" id="cash-method">
+                        Cash
+                    </label>
+                    <label>
+                        <input type="radio" name="payment-method" value="credit" id="credit-method">
+                        Credit Card
+                    </label>
+                    <label>
+                        <input type="radio" name="payment-method" value="ewallet" id="ewallet-method">
+                        E-Wallet
+                    </label>
+                </div>
+
+                <!-- Cash Payment Section -->
+                <div id="cash-section" style="display: none;">
+                    <p>You have selected to pay by cash.</p>
+                </div>
+
+                <!-- Credit Card Payment Section -->
+                <div id="credit-section" style="display: none;">
+                    <div class="form-group">
+                        <label for="card-number">Card Number:</label>
+                        <input type="text" id="card-number" name="card-number" placeholder="Enter your card number">
+                    </div>
+                    <div class="form-group">
+                        <label for="expiry-date">Expiry Date:</label>
+                        <input type="month" id="expiry-date" name="expiry-date">
+                    </div>
+                    <div class="form-group">
+                        <label for="cvv">CVV:</label>
+                        <input type="text" id="cvv" name="cvv" placeholder="Enter CVV">
+                    </div>
+                </div>
+
+                <!-- E-Wallet Payment Section -->
+                <div id="ewallet-section" style="display: none;">
+                    <div class="form-group">
+                        <label for="ewallet-number">E-Wallet Number:</label>
+                        <input type="text" id="ewallet-number" name="ewallet-number" placeholder="Enter your e-wallet number">
+                    </div>
+                </div>
+
+                <button type="submit" class="submit-button">Submit Payment</button>
+            </form>
+        </section>
+
+        <button onclick="location.href='/../Controllers/GoingToHome.php'" class="back-button">Back to Home</button>
+    </div>
+
+    <script>
+        // Handle the display of payment sections based on the selected method
+        const cashMethod = document.getElementById('cash-method');
+        const creditMethod = document.getElementById('credit-method');
+        const ewalletMethod = document.getElementById('ewallet-method');
+
+        const cashSection = document.getElementById('cash-section');
+        const creditSection = document.getElementById('credit-section');
+        const ewalletSection = document.getElementById('ewallet-section');
+
+        const paymentSections = [cashSection, creditSection, ewalletSection];
+
+        function hideAllSections() {
+            paymentSections.forEach(section => section.style.display = 'none');
+        }
+
+        cashMethod.addEventListener('change', () => {
+            hideAllSections();
+            cashSection.style.display = 'block';
+        });
+
+        creditMethod.addEventListener('change', () => {
+            hideAllSections();
+            creditSection.style.display = 'block';
+        });
+
+        ewalletMethod.addEventListener('change', () => {
+            hideAllSections();
+            ewalletSection.style.display = 'block';
+        });
+    </script>
+</body>
+</html>
