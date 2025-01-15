@@ -184,7 +184,7 @@ class Certificate {
         if ($stmt) {
             $stmt->bind_param("i", $eventID);
             $stmt->execute();
-            $stmt->bind_result($this->Event_Name, $eventDate);
+            $stmt->bind_result($eventName, $eventDate);
 
             if ($stmt->fetch()) {
                 $this->Event_Name = $eventName;
@@ -224,12 +224,27 @@ class Certificate {
             $stmt->close();
         }
     }
+
     public function generateCertificateContent(): string {
         return "Certificate of Participation\n" .
                "Volunteer Name: " . $this->getVolunteerName() . "\n" .
                "Event Name: " . $this->getEventName() . "\n" .
                "Event Date: " . $this->getEventDate()->format('Y-m-d') . "\n\n" .
                "Thank you for your contribution to making this event a success!";
+    }
+
+    public function exportToJson(IJSON $jsonAdapter): bool {
+        $filePath = __DIR__ . "/certificates/{$this->getVolunteerName()}_{$this->getEventName()}_certificate.json";  // Save in the same directory as the script
+        $data = [
+            'CertificateID' => $this->getID(),
+            'EventName' => $this->getEventName(),
+            'EventDate' =>  $this->getEventDate()->format('Y-m-d'),
+            'VolunteerName' => $this->getVolunteerName(),
+            'VolunteerID' => $this->getvolunteerID(),
+            'EventID' => $this->geteventID(),
+        ];
+
+        return $jsonAdapter->saveToJson($data, $filePath);
     }
 
 }
