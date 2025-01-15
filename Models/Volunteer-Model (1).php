@@ -14,13 +14,14 @@ class Volunteer extends Person {
     protected $age;
     protected $skills = [];
     protected $certificates = [];
+ 
 
 
     public function __construct($id = null, $personId = null, $name = "", $gender = "", $nationalId = null, $job = "",
                                  $age = 0, $available = false, $volunteerHours = 0, $skills = [], $certificates = [],
-                                 $password = "", $email = "", $addressId = null, $isDeleted = false) {
+                                 $password = "", $email = "", $addressId = null, $isDeleted = false, $phone = "" ) {
         // Initialize the parent class (Person)
-        parent::__construct($id, $name, $age, $password, $email, $addressId, $isDeleted);
+        parent::__construct($id, $name, $age, $password, $email, $addressId, $isDeleted,$phone);
         $this->personId = $personId;
         $this->job = $job;
         $this->volunteerHours = $volunteerHours;
@@ -272,6 +273,40 @@ class Volunteer extends Person {
             return false;
         }
     }
+    public static function getAllVolunteers(): array {
+        $dbProxy = new DBProxy('Volunteers');
+        $query = "SELECT Person.ID as PersonID, Person.Name, Person.Email, Person.Phone, Volunteer.ID as VolunteerID
+                  FROM Volunteer
+                  INNER JOIN Person ON Volunteer.PersonID = Person.ID
+                  WHERE Person.IsDeleted = 0";
+        
+        $conn = DBConnection::getInstance()->getConnection();
+        $stmt = $conn->prepare($query);
+    
+        $volunteers = [];
+        if ($stmt) {
+            $stmt->execute();
+            $result = $stmt->get_result();
+    
+            while ($row = $result->fetch_assoc()) {
+                $volunteer = new Volunteer(
+                    id: $row['VolunteerID'],
+                    personId: $row['PersonID'],
+                    name: $row['Name'],
+                    email: $row['Email'],
+                    phone: $row['Phone'],
+                    isDeleted: false
+                );
+                $volunteers[] = $volunteer;
+            }
+    
+            $stmt->close();
+        }
+    
+        return $volunteers;
+    }
+    
+
 }
 
 ?>
