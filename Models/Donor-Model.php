@@ -6,7 +6,7 @@ require_once 'Person-Model.php';
 class Donor extends Person {
     protected $id;
     protected $personId;
-
+    protected $DonateList = [];
 
     public function __construct($id = null, $personId = null, $name = "", $age = 0, $password = "", $email = "", $addressId = null, $phone='',$IsDeleted = false) {
         // Initialize the parent class (Person)
@@ -183,6 +183,12 @@ class Donor extends Person {
         } else {
             return false;
         }
+    }
+
+    public function getUserDonates(){
+        $Donate = new Donate(DonorID: $this->id);
+        $this->DonateList = $Donate->readUserDonates($this->id);
+        return $this->DonateList;
     }
 }
 ?>
