@@ -379,3 +379,99 @@ hr {
 .profile-button:hover {
   background-color: #0056b3;
 }
+
+/* Additional styles for the Certificate page */
+.certificates-container {
+  margin: 20px 0;
+  padding: 20px;
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  background-color: #f9f9f9;
+}
+
+.certificates-container h2 {
+  color: #007bff;
+}
+
+.certificates-container p {
+  margin: 10px 0;
+  font-size: 16px;
+}
+
+.certificates-list {
+  list-style-type: none;
+  padding: 0;
+}
+
+.certificates-list li {
+  margin: 10px 0;
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  background-color: #fff;
+}
+
+.certificates-list li h3 {
+  margin: 0;
+  font-size: 18px;
+}
+
+.certificates-list li a {
+  color: #007bff;
+  text-decoration: none;
+  font-size: 16px;
+}
+
+.certificates-list li a:hover {
+  text-decoration: underline;
+}
+
+.back-button {
+  margin-top: 20px;
+  background-color: #4caf50;
+  color: white;
+  padding: 10px 15px;
+  border: none;
+  border-radius: 5px;
+  font-size: 16px;
+  cursor: pointer;
+}
+
+.back-button:hover {
+  background-color: #388e3c;
+}
+
+
+
+/*Event details */
+.event-details-container {
+  margin: 20px 0;
+  padding: 20px;
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  background-color: #f9f9f9;
+}
+
+.event-details-container h2 {
+  color: #007bff;
+}
+
+.event-details-container p {
+  margin: 10px 0;
+  font-size: 16px;
+}
+
+.back-button {
+  margin-top: 20px;
+  background-color: #4caf50;
+  color: white;
+  padding: 10px 15px;
+  border: none;
+  border-radius: 5px;
+  font-size: 16px;
+  cursor: pointer;
+}
+
+.back-button:hover {
+  background-color: #388e3c;
+}
