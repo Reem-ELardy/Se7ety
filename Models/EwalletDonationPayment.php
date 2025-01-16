@@ -1,6 +1,6 @@
 <?php
 class EWalletDonationPayment implements IDonationPaymentStrategy {
-    private int $transactionID;
+    private $transactionID;
     private float $EwalletTax = 0.2;
 
 
@@ -10,7 +10,7 @@ class EWalletDonationPayment implements IDonationPaymentStrategy {
 
     public function calculations($details){
         $data = [
-            'Tax' => $this->EwalletTax, 
+            'Tax' => $details * $this->EwalletTax, 
             'Total Price' => $details + ($details * $this->EwalletTax)
         ];
 

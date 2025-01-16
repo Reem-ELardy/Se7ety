@@ -23,7 +23,7 @@ class CardDonationPayment implements IDonationPaymentStrategy {
 
     public function calculations($details){
         $data = [
-            'Tax' => $this->cardTax, 
+            'Tax' => $details * $this->cardTax, 
             'Total Price' => $details + ($details * $this->cardTax)
         ];
 

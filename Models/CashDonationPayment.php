@@ -5,7 +5,7 @@ class CashDonationPayment implements IDonationPaymentStrategy {
 
     public function calculations($details){
         $data = [
-            'Tax' => $this->cahshTax, 
+            'Tax' => $details * $this->cahshTax, 
             'Total Price' => $details + ($details * $this->cahshTax)
         ];
 
