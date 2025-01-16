@@ -19,9 +19,10 @@ class CommunicationFacade {
     private ?Receipt $receipt;
     private ?Certificate $certificate;
     private ?Ticket $ticket;
+    private ?IJsonAdapter $jsonAdapter;
 
 
-    public function __construct(?Email $email = null,?SMS $sms = null,?SocialMedia $socialMedia = null, Person $person, ?Subject $event = null, ?Receipt $receipt = null, ?Certificate $certificate = null, ?Ticket $ticket = null) {
+    public function __construct(?Email $email = null,?SMS $sms = null,?SocialMedia $socialMedia = null, Person $person, ?Subject $event = null, ?Receipt $receipt = null, ?Certificate $certificate = null, ?Ticket $ticket = null ,?IJsonAdapter $jsonAdapter = null) {
         $this->email =$email;
         $this->sms = $sms;
         $this->socialMedia = $socialMedia;
@@ -30,6 +31,7 @@ class CommunicationFacade {
         $this->receipt = $receipt;
         $this->certificate = $certificate;
         $this->ticket = $ticket;
+        $this->jsonAdapter = $jsonAdapter ?? new SocialMediaJsonAdapter($socialMedia);
     }
     private function sendCommunication(string $message, string $type): bool {
         $emailResult = true;
@@ -51,7 +53,7 @@ class CommunicationFacade {
         }
         if ($type === "social_media" && $this->socialMedia) {
             $this->simulateSocial($message, $this->socialMedia->getPlatform(), $this->person->getEmail());
-            $socialresult = $this->socialMedia->send_communication($message, $this->person, $this->event);
+            $socialresult = $this->jsonAdapter->sendJson($message, $this->person, $this->event);
         }
     
         return $emailResult && $smsResult && $socialresult;
@@ -130,20 +132,44 @@ class CommunicationFacade {
     
         return true;
     }
-    private function simulateSocial(string $message, PlatformType $platform, string $email): void {
-        $logFile = __DIR__ . "/social_media_logs/{$platform->value}_social_log.txt";
+    // private function simulateSocial(string $message, PlatformType $platform, string $email): void {
+    //     $logFile = __DIR__ . "/social_media_logs/{$platform->value}_social_log.txt";
     
-        $logContent = "Platform: " . $platform->value . "\n" .
-                      "Email: " . $email . "\n" .
-                      "Message:\n" . $message . "\n" .
-                      "----------------------------------------\n";
+    //     $logContent = "Platform: " . $platform->value . "\n" .
+    //                   "Email: " . $email . "\n" .
+    //                   "Message:\n" . $message . "\n" .
+    //                   "----------------------------------------\n";
     
+    //     if (!is_dir(__DIR__ . '/social_media_logs')) {
+    //         mkdir(__DIR__ . '/social_media_logs', 0777, true);
+    //     }
+    
+    //     file_put_contents($logFile, $logContent, FILE_APPEND);
+    // }
+    private function simulateSocial(string $message, PlatformType $platform, string $recipientEmail): bool {
+        $platformName = strtolower($platform->value);
+        $recipientEmailSanitized = str_replace(['@', '.'], '_', $recipientEmail);
+        $logFile = __DIR__ . "/social_media_logs/{$platformName}_{$recipientEmailSanitized}_social_log.json";
+        $logContent = [
+            'platform' => $platform->value,
+            'recipient' => $recipientEmail,
+            'message' => trim(preg_replace('/\s+/', ' ', $message)), // Minimize whitespace issues
+        ];
         if (!is_dir(__DIR__ . '/social_media_logs')) {
             mkdir(__DIR__ . '/social_media_logs', 0777, true);
         }
     
-        file_put_contents($logFile, $logContent, FILE_APPEND);
+        try {
+            $jsonContent = json_encode($logContent, JSON_PRETTY_PRINT | JSON_THROW_ON_ERROR);
+            file_put_contents($logFile, $jsonContent);
+        } catch (JsonException $e) {
+            return false;
+        }
+    
+        return true;
     }
+    
+    
     
     public function sendEventParticipationThankYou(string $type = "both"): bool {
         if ($this->person && $this->event) {
@@ -214,13 +240,13 @@ class CommunicationFacade {
         }
     
         $article = $this->generateEventArticleList();
-        $recipients = $this->getRecipients(); // Fetch volunteers and patients
+        $recipients = $this->getRecipients(); 
         $success = true;
     
         foreach ($recipients as $recipient) {
-            $this->person = $recipient; // Set the current recipient
+            $this->person = $recipient;
             $result = $this->sendCommunication($article, $type);
-            $success = $success && $result; // Combine results to check overall success
+            $success = $success && $result; 
         }
     
         return $success;
@@ -247,13 +273,9 @@ class CommunicationFacade {
     }
     private function getRecipients(): array {
         $recipients = [];
-    
-        // Fetch volunteers
         $volunteersModel = new Volunteer();
         $volunteers = $volunteersModel->getAllVolunteers();
         $recipients = array_merge($recipients, $volunteers);
-    
-        // Fetch patients
         $patientsModel = new Patient();
         $patients = $patientsModel->getAllPatients();
         $recipients = array_merge($recipients, $patients);
