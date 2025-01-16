@@ -2,6 +2,7 @@
 require_once __DIR__ . '/../DB-creation/IDatabase.php';
 require_once __DIR__ . '/../DB-creation/DBProxy.php';
 require_once "Donation.php";
+require_once 'BasicReceipt.php';
 require_once 'MedicalReceiptDecorator.php';
 require_once 'MoneyReceiptDecorator.php';
 require_once 'TotalDecorator.php';
@@ -15,12 +16,12 @@ class Donate {
     private array $Donation_Details = []; 
     private $dbProxy;
 
-    public function __construct(int $DonorID, int $donateID = 0, string $Date = '', string $Time = '', $isDeleted = false) {
+    public function __construct(int $DonorID, int $donateID = 0, string $Date = '', string $Time = '', bool $isDeleted = false) {
         $this->DonorID = $DonorID;
         $this->Donate_ID = $donateID;
         $this->Date = $Date ?: date('Y-m-d');
         $this->Time = $Time ?: date('H:i:s');
-        $this->IsDeleted = $isDeleted; 
+        $this->IsDeleted = $isDeleted;
         $this->dbProxy = new DBProxy('user');
     }
 
@@ -131,8 +132,10 @@ class Donate {
     
             $donates = [];
             while ($stmt->fetch()) {
-                $donate = new Donate($DonorID, (int) $Donate_ID, $Date, $Time, $IsDeleted);
+                $donate = new Donate($DonorID, 'user',(int) $Donate_ID, $Date, $Time, $IsDeleted);
                 $donate->setDonateID($Donate_ID);
+                $donations = (new MoneyDonation($Donate_ID))->readDonateDonation($Donate_ID, 'user');
+                $donate->Donation_Details = $donations;
                 $donates[] = $donate;
             }
             return $donates;
@@ -140,7 +143,8 @@ class Donate {
         return [];
     }
 
-    public function generateReceipt($donerName): string {
+    public function generateReceipt($donerName){
+        $this->readDonate($this->Donate_ID);
         $date = new DateTime($this->Date);
         $receipt = new BasicReceipt($donerName, $date, $this);
         $receipt->createReceipt();
@@ -165,7 +169,6 @@ class Donate {
         }
         return $receipt;
     }
-    
 }
 
 ?>
