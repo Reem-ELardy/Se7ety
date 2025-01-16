@@ -312,3 +312,70 @@ hr {
 .back-button:hover {
   background-color: #388e3c;
 }
+
+.dashboard {
+  padding: 20px;
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  background-color: #f9f9f9;
+}
+
+.dashboard h2 {
+  color: #007bff;
+  margin-bottom: 20px;
+}
+
+.task-list {
+  list-style-type: none;
+  padding: 0;
+}
+
+.task-list li {
+  margin: 10px 0;
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  background-color: #fff;
+}
+
+.task-list li h3 {
+  margin: 0;
+  font-size: 18px;
+}
+
+.task-list li p {
+  margin: 5px 0;
+  color: #555;
+}
+
+.task-list li button {
+  background-color: #4caf50;
+  color: white;
+  padding: 5px 10px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.task-list li button:hover {
+  background-color: #388e3c;
+}
+
+/* Style for the Profile button */
+.profile-button {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background-color: #007bff;
+  color: white;
+  padding: 10px 15px;
+  border: none;
+  border-radius: 5px;
+  font-size: 16px;
+  cursor: pointer;
+  z-index: 100; /* Ensure it stays on top */
+}
+
+.profile-button:hover {
+  background-color: #0056b3;
+}
