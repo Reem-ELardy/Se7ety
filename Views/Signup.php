@@ -86,7 +86,6 @@
       <!-- Login Link -->
       <a href="../Views/Login.php" class="login-link">Already have an account? Login</a>
     </div>
-          <!--kada dah gahz ll controller 3la tol -->
 
     <script>
       // Populate District Dropdown
@@ -117,8 +116,9 @@
         skillDropdown.innerHTML = '<option value="">-- Select Skill --</option>';
         skillList.forEach(skill => {
           const option = document.createElement('option');
-          option.value = skill.id;
-          option.textContent = skill.name;
+          option.value = skill.id; // Skill ID as the value
+          option.textContent = skill.name; // Skill Name as the display text
+          option.id = `skill-${skill.id}`; // Assigning unique ID to the option
           skillDropdown.appendChild(option);
         });
       }
