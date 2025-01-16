@@ -11,7 +11,6 @@ enum Status: string {
     case Pending = 'Pending';
     case Done = 'Done';
     case Canceled = 'Canceled';
-
 }
 
 abstract class Donation {
@@ -24,13 +23,13 @@ abstract class Donation {
     protected $dbProxy;
 
 
-    public function __construct(int $donateID=null, String $donationtype= '', ?float $cashamount = 0, String $status = 'Pending', bool $isDeleted = false) {
+    public function __construct(int $donateID=null, String $donationtype= '', String $status = 'Pending', bool $isDeleted = false, $id = 0) {
         $this->dbProxy = new DBProxy('user');
         $this->donationtype = DonationType::from($donationtype);
         $this->status = Status::from($status);
-        $this->cashamount = $cashamount; 
         $this->IsDeleted = $isDeleted;
         $this->DonateID = $donateID;
+        $this->id = $id;
     }
 
     //Setters and Getters
@@ -79,7 +78,7 @@ abstract class Donation {
     }
 
     //Template Functions
-    public function processDonationTemplate($details, $donation_id) {
+    public function processDonationTemplate($donation_id) {
         // Start session if it's not already started
         if (session_status() == PHP_SESSION_NONE) {
             session_start();
@@ -88,9 +87,9 @@ abstract class Donation {
         $donation = &$_SESSION['donations'][$donation_id];
     
         // Process donation steps based on the session state
-        if (!isset($donation['donation_step']) || $donation['donation_step'] == null || $donation['donation_step'] == 'Validation Failed') {
-            if (!$this->validate($details)) {
-                $donation['donation_step'] = 'Validation Failed';
+        if (!isset($donation['donation_step']) || $donation['donation_step'] == null || $donation['donation_step'] == 'Validation_Failed') {
+            if (!$this->validate()) {
+                $donation['donation_step'] = 'Validation_Failed';
                 return;
             }
             $this->createDonation();
@@ -100,18 +99,17 @@ abstract class Donation {
         }
     
         if ($donation['donation_step'] === 'PaymentMethod') {
-            $totaldata = $this->CalculatePayment($details);
+            $totaldata = $this->CalculatePayment();
             $this->saveState('Totaldata', $totaldata, $donation_id);
-            $donation['donation_step'] = 'payment_done';
             return;
         }
     
-        if ($donation['donation_step'] === 'payment_done' || $donation['donation_step'] == 'Payment Failed') {
+        if ($donation['donation_step'] === 'payment_done' || $donation['donation_step'] == 'Payment_Failed') {
+
             $paymentMethod = $this->getPaymentMethod();
             if (strtolower($paymentMethod) != 'cash' && strtolower($paymentMethod) != 'inkind') {
-                $PaymentDetails = $this->getState('PaymentDetails', $donation_id);
-                if (!$this->Payment($paymentMethod, $PaymentDetails, $details)) {
-                    $donation['donation_step'] = 'Payment Failed';
+                if (!$this->Payment()) {
+                    $donation['donation_step'] = 'Payment_Failed';
                     return;
                 }
                 $this->CompleteDonation();
@@ -122,8 +120,8 @@ abstract class Donation {
     }
     
     
-    abstract protected function validate($data);
-    abstract protected function CalculatePayment($details);
+    abstract protected function validate();
+    abstract protected function CalculatePayment();
     protected function saveState($key, $value, $donationSessionID) {
         $donation = &$_SESSION['donations'][$donationSessionID];
         $donation[$key] = $value;
@@ -137,13 +135,12 @@ abstract class Donation {
     abstract public function getPaymentMethod();
 
     //Payment Funcion used for strategy
-    abstract protected function Payment($paymentMethod, $PaymentDetails, $details);
+    abstract protected function Payment();
 
-    
+
     //State Funtions
     abstract public function ProcessDonation();
     abstract public function CompleteDonation();
-
 
     //CRUD Functions
     public function createDonation() {      
@@ -189,6 +186,7 @@ abstract class Donation {
 
         return true;
     }
+    
     public function CancelDonation():bool{
         if($this->status->value === 'Pending'){
             $this->setDonationStatus("Canceled");
