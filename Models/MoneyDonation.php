@@ -13,11 +13,11 @@ class MoneyDonation extends Donation {
     private $cash;
     protected IMoneyDonationState $state;
 
-    public function __construct($DonateID = 0 , $cashamount = 0, $status = 'Pending', $isDeleted = false, $donationtype = 'Money') {
-        parent::__construct(donateID: $DonateID, donationtype:$donationtype,status:$status);
-        $this->dbProxy = new DBProxy('user');
+
+    public function __construct($DonateID = 0 , $cashamount = 0, $DonationID = 0, $status = 'Pending', $isDeleted = false, $donationtype = 'Money') {
+        parent::__construct(donateID: $DonateID, donationtype:$donationtype, status:$status, id: $DonationID);
+        $this->state = new MoneypendingState();
         $this->cash=$cashamount;
-        $this->state = new MoneypendingState(); 
     }
 
     public function getCashAmount(): ?float {
@@ -25,20 +25,20 @@ class MoneyDonation extends Donation {
     }
 
     public function setCashAmount($cashamount): void {
-            $this->cash = $cashamount;
+        $this->cash = $cashamount;
     }
 
     public function SetState($state){
         $this->state=$state;
     }
 
-    public function setPaymentMethod($paymentMethod){
+    public function setPaymentMethod($paymentMethod = null){
         if(strtolower($paymentMethod) == 'cash'){
             $this->donationMethod = new CashDonationPayment();
         }elseif(strtolower($paymentMethod) == 'card'){
-            $this->donationMethod = new CardDonationPayment();
+            $this->donationMethod = new CardDonationPayment($paymentMethod );
         }elseif(strtolower($paymentMethod) == 'ewallet'){
-            $this->donationMethod = new EWalletDonationPayment();
+            $this->donationMethod = new EWalletDonationPayment($paymentMethod );
         }
     }
 
@@ -49,9 +49,8 @@ class MoneyDonation extends Donation {
         return null;
     }
 
-    public function validate($data): bool {
-        if ($data < $this->minAmount) {
-            throw new Exception("The donation amount must be at least $" . $this->minAmount);
+    public function validate(): bool {
+        if ($this->cash < $this->minAmount) {
             return false;
         }
         return true;
@@ -59,7 +58,7 @@ class MoneyDonation extends Donation {
 
     public function createMoneyDonation(){
         if($this->validate($this->cash)){
-            return $this->createDonation();
+            return $this->updateCashAmount();
         }
         return false;
     }
@@ -75,17 +74,10 @@ class MoneyDonation extends Donation {
     }
 
     //Payment using Payment Strategy
-    public function payment($paymentMethod, $PaymentDetails, $details){
-        if($paymentMethod == 'Cash'){
-            $this->donationMethod = new CashDonationPayment();
-        }elseif($paymentMethod == 'Card'){
-            $this->donationMethod = new CardDonationPayment($PaymentDetails);
-        }elseif($paymentMethod == 'Ewallet'){
-            $this->donationMethod = new EWalletDonationPayment($PaymentDetails);
-        }
-
-        return $this->donationMethod->processPayment($details);
+    public function payment(){
+        return $this->donationMethod->processPayment($this->cash);
     }
+
 
     /*State Function for State DP*/
     public function ProcessDonation(): void{
@@ -93,15 +85,15 @@ class MoneyDonation extends Donation {
     }
 
     public function CompleteDonation(){
-       
         $this->state->NextState($this);
-        $this->ProcessDonation();  
+        $this->ProcessDonation(); 
     }
 
     //Template Function
-    public function calculatePayment($details){
-        $totaldata = $this->donationMethod->calculations($details);
+    public function calculatePayment(){
+        $totaldata = $this->donationMethod->calculations($this->cash);
         return $totaldata;
     }
+
 }
 ?>
