@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Donation Details</title>
-    <link rel="stylesheet" href="style_Home.css">
+    <link rel="stylesheet" href="/views/style_Home.css">
     <style>
        
     </style>
@@ -32,24 +32,71 @@
 
             // Display Money Donation Details
             if (donationDetail['type'] === 'Money' || donationDetail['type'] === 'Both') {
-                donationInfo.innerHTML += `
+                let moneyDonationHTML = `
                     <div class="donation-section">
                         <h3>Money Donation</h3>
                         <strong>Amount:</strong> ${donationDetail['cashamount']}<br>
                         <div class="action-buttons">
-                            <button class="undo-button" onclick="undoDonation('money', ${donationDetail['id']})">Undo</button>
-                            <button class="redo-button" onclick="redoDonation('money', ${donationDetail['id']})">Redo</button>
+                `;
+
+                if (donationDetail['StatusMoney'] === 'Pending') {
+                    moneyDonationHTML += `
+                        <form method="POST" action="UndoController.php">
+                            <input type="hidden" name="Type" value="Money"> <!-- Action to be handled in the controller -->
+                            <input type="hidden" name="donationID" value="${donationDetail['id']}"> <!-- Donation ID -->
+                            <button type="submit" class="undo-button">Undo</button>
+                        </form>
+                    `;
+                } else if (donationDetail['StatusMoney'] === 'Done') {
+                    moneyDonationHTML += `
+                        <form method="POST" action="RedoDonation.php">
+                            <input type="hidden" name="Type" value="Money"> <!-- Action to be handled in the controller -->
+                            <input type="hidden" name="donationID" value="${donationDetail['id']}"> <!-- Donation ID -->
+                            <button type="submit" class="redo-button">Redo</button>
+                        </form>
+                    `;
+                }
+
+                moneyDonationHTML += `
                         </div>
                     </div>
                 `;
+
+                // Append Money Donation HTML
+                donationInfo.innerHTML += moneyDonationHTML;
             }
 
             // Display Medical Donation Details
             if (donationDetail['type'] === 'Medical' || donationDetail['type'] === 'Both') {
-                donationInfo.innerHTML += `
+                let medicalDonationHTML = `
                     <div class="donation-section">
                         <h3>Medical Donations</h3>
+                        <div class="action-buttons">
                 `;
+
+                if (donationDetail['StatusMedical'] === 'Pending') {
+                    medicalDonationHTML += `
+                        <form method="POST" action="UndoController.php">
+                            <input type="hidden" name="Type" value="Medical"> <!-- Action to be handled in the controller -->
+                            <input type="hidden" name="donationID" value="${donationDetail['id']}"> <!-- Donation ID -->
+                            <button type="submit" class="undo-button">Undo</button>
+                        </form>
+                    `;
+                } else if (donationDetail['StatusMedical'] === 'Done') {
+                    medicalDonationHTML += `
+                        <form method="POST" action="RedoDonation.php">
+                            <input type="hidden" name="Type" value="Medical"> <!-- Action to be handled in the controller -->
+                            <input type="hidden" name="donationID" value="${donationDetail['id']}"> <!-- Donation ID -->
+                            <button type="submit" class="redo-button">Redo</button>
+                        </form>
+                    `;
+                }
+
+                medicalDonationHTML += `
+                        </div>
+                `;
+
+                donationInfo.innerHTML += medicalDonationHTML;
 
                 const medicalItems = donationDetail['Items'];
 
@@ -57,18 +104,15 @@
                     medicalItems.forEach((item, index) => {
                         donationInfo.innerHTML += `
                             <div>
-                                <strong>Medical Donation ${index + 1}:</strong><br>
+                                <strong>Medical Item ${index + 1}:</strong><br>
                                 <strong>Name:</strong> ${item['medicalname']}<br>
                                 <strong>Type:</strong> ${item['medicaltype']}<br>
                                 <strong>Quantity:</strong> ${item['quantity']}<br>
-                                <div class="action-buttons">
-                                    <button class="undo-button" onclick="undoDonation('medical', ${item['id']})">Undo</button>
-                                    <button class="redo-button" onclick="redoDonation('medical', ${item['id']})">Redo</button>
-                                </div>
                                 <hr>
                             </div>
                         `;
                     });
+                    
                 } else {
                     donationInfo.innerHTML += "No medical items available.<br>";
                 }
@@ -80,9 +124,9 @@
         }
 
         
-        function undoDonation(type, id) {
-            alert("dah for test bs ya reem");
-        
+        function undoDonation(type, donationID) {
+
+            alert("Donation is deleted");
         }
 
         function redoDonation(type, id) {
