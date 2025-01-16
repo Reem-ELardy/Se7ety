@@ -21,7 +21,7 @@ class BasicReceipt extends Receipt {
         $this->donate = $donate;
     }
 
-    /**
+     /**
      * Get the donor's name.
      * 
      * @return string
@@ -60,18 +60,19 @@ class BasicReceipt extends Receipt {
     /**
      * Generate a receipt string with donor details.
      * 
-     * @return string
+     * @return array
     */
-    public function generate_receipt(): string {
-        return "Donor: {$this->donor_name} <br> Date: {$this->donation_date->format('Y-m-d')}";
+    public function generate_receipt(){
+        return ["Donor" => $this->donor_name, "Date"=> $this->donation_date->format('Y-m-d')];
     }
 
     /**
      * Calculate the total donation amount.
      * 
-     * @return float
+     * @return double
     */
     public function total_donation(){
+        // Assuming the Donate class has a method to get the donation amount
         return 0;
     }
 }

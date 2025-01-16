@@ -21,7 +21,7 @@ class MoneyReceiptDecorator extends ReceiptDecorator {
         $this->total = $PaymentData['Total Price'];
     }
 
-     // Getter and Setter methods
+        // Getter and Setter methods
 
     /**
      * Get the donation amount.
@@ -66,11 +66,11 @@ class MoneyReceiptDecorator extends ReceiptDecorator {
      * 
      * @return string
     */
-    public function generate_receipt(): string {
+    public function generate_receipt(){
         $base_receipt = parent::generate_receipt(); // Get the base receipt
-        return $base_receipt 
-            . "<br> Donation Amount: " . number_format($this->amount, 2)
-            . "<br> Tax Value: " . number_format($this->tax_value*$this->amount, 2);
+        $base_receipt['Donation Amount'] = number_format($this->amount, 2);
+        $base_receipt['Money Tax Value'] = number_format($this->tax_value);
+        return $base_receipt;
     }
 
     /**
@@ -78,7 +78,7 @@ class MoneyReceiptDecorator extends ReceiptDecorator {
      * 
      * @return float
     */
-    public function total_donation(): float {
+    public function total_donation(){
         return parent::total_donation() + $this->total;
     }
 }

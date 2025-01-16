@@ -3,6 +3,7 @@
 require_once 'ReceiptDecorator.php';
 
 class TotalDecorator extends ReceiptDecorator {
+
     /**
      * Constructor for TotalDecorator.
      * 
@@ -17,10 +18,11 @@ class TotalDecorator extends ReceiptDecorator {
      * 
      * @return string The complete receipt string with the total donation value.
      */
-    public function generate_receipt(): string {
+    public function generate_receipt(){
         $base_receipt = parent::generate_receipt(); // Get the base receipt details
         $total = $this->total_donation(); // Calculate the total donation
-        return $base_receipt . "<br><br> Total Donation: " . number_format($total, 2); // Format the total donation
+        $base_receipt['Total Donation'] = number_format($total, 2);
+        return $base_receipt; // Format the total donation
     }
 
     /**
@@ -28,7 +30,7 @@ class TotalDecorator extends ReceiptDecorator {
      * 
      * @return float The total donation value.
      */
-    public function total_donation(): float {
+    public function total_donation(){
         return parent::total_donation(); // Simply pass through to the parent method
     }
 }

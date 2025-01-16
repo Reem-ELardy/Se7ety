@@ -26,23 +26,29 @@ class MedicalReceiptDecorator extends ReceiptDecorator {
      * 
      * @return string
     */
-    public function generate_receipt(): string {
+    public function generate_receipt(){
         $base_receipt = parent::generate_receipt(); // Get the base receipt
-        $medical_items = "<br>Medical Items:<br>";
-
+        $medical_items = [];
         foreach ($this->items as $medical) {
-            $medical_items .= "- {$medical['medicalname']} (Type: {$medical['medicaltype']})  (Quantity: {$medical['quantity']})<br>";
+            $medical_items[] = [
+                "Name" => $medical['medicalname'],
+                "Type" => $medical['medicaltype'],
+                "Quantity" => $medical['quantity']
+            ];
         }
 
-        return $base_receipt . "<br>" . $medical_items ."Tax Value: " . number_format($this->total_value, 2) . '<br>';
-    }
+        // Append medical items and total value to the receipt
+        $base_receipt['Medical Items'] = $medical_items;
+        $base_receipt['Medical Tax Value'] = number_format($this->total_value, 2);
 
+        return $base_receipt;
+    }
     /**
      * Calculates the total donation, including the value of medical items.
      * 
      * @return float
     */
-    public function total_donation(): float {
+    public function total_donation(){
         return parent::total_donation() + $this->total_value;
     }
 }
