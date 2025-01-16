@@ -9,34 +9,29 @@ require_once 'IMedicalDonationState.php';
 require_once 'MedeicalpendingState.php';
 
 
-
-
 class MedicalDonation extends Donation {
     protected IDonationPaymentStrategy $donationMethod;
     private  $medicalItems = [];
-    protected IMedicalDonationState $state;
-   
+    protected  IMedicalDonationState $state;
 
     public function __construct(
         $donateID = 0,
         $donationtype = 'Medical',
-        $cashamount = 0,
+        // $cashamount = 0,
         $status = 'Pending',
         $isDeleted = false,
-        $medicalItems = []
+        $medicalItems = [],
+        $donationID = 0
     ) {
-        parent::__construct($donateID, $donationtype, $cashamount, $status, $isDeleted);
+        parent::__construct($donateID, $donationtype, $status, $isDeleted, $donationID);
         
-       $this->dbProxy = new DBProxy('user');
-       $this->medicalItems = $medicalItems;
-       $this->state = new MedicalpendingState(); 
+        $this->state = new MedicalpendingState(); 
+        $this->medicalItems = $medicalItems;
     }
-
-
-    public function validate($medicalItems){
-        foreach ($medicalItems as &$item) {
+    public function validate(){
+        foreach ($this->medicalItems as &$item) {
             if ($item['quantity'] <= 0) {
-                throw new Exception("All quantaty od the medical item must be greater than 0 ") ;
+                return false ;
             }
         }
         return true;
@@ -81,10 +76,12 @@ class MedicalDonation extends Donation {
 
     public function setMedicalItems(array $medicalItems): void {
         foreach ($medicalItems as $item) {
-
+            
+    
             $MedicalName = $item['medicalname'];
             $MedicalType=$item['medicaltype'];
             $quantity = $item['quantity'];
+    
     
             if (!is_int($quantity) || $quantity <= 0) {
                 throw new Exception("Invalid quantity. Must be a positive integer.");
@@ -107,7 +104,6 @@ class MedicalDonation extends Donation {
         }
         $result = $stmt->get_result();
         if (!$result || $result->num_rows === 0) {
-            $stmt->close();
             return false; 
         }
         while ($row = $result->fetch_assoc()) {
@@ -116,7 +112,6 @@ class MedicalDonation extends Donation {
                 'Quantity' => $row['Quantity']
             ];
         }
-        $stmt->close();
         return $DonatoinMedical;
     }
 
@@ -153,7 +148,6 @@ class MedicalDonation extends Donation {
         return true;
     }
 
-    /*State Function for State DP*/
     public function ProcessDonation(): void{
         $this->state->ProsscingDonation($this);
     }
@@ -161,25 +155,17 @@ class MedicalDonation extends Donation {
     public function CompleteDonation(){
        $this->state->NextState($this);
        $this->ProcessDonation();
-
-
     }
 
-    //Payment using Payment Strategy
-    public function payment($paymentMethod, $PaymentDetails = null, $details){
-      $DonatoinMedical= $this->getDonationMedicalItem($this->getDonationId());
-        $this->donationMethod = new InKindDonationPayment();
-
-        return $this->donationMethod->processPayment($DonatoinMedical);
+    public function payment(){
+        // $this->donationMethod = new InKindDonationPayment();
+        return $this->donationMethod->processPayment($this->medicalItems);
     }
 
-    //Template Function
-    public function calculatePayment($details){
-        $totaldata = $this->donationMethod->calculations($details);
+    public function calculatePayment(){
+        $totaldata = $this->donationMethod->calculations($this->medicalItems);
         return $totaldata;
     }
-
-    
 
 }
 
