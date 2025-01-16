@@ -22,7 +22,7 @@
             </ul>
         </section>
 
-        <button onclick="location.href='/../Controllers/VolunteerDashboard.php'" class="back-button">Back to Dashboard</button>
+        <button onclick="location.href='Volunteer_Dashboard.php'" class="back-button">Back to Dashboard</button>
     </div>
 
     <script>
