@@ -32,7 +32,7 @@ header h1 {
 
 .donations {
   margin: 20px 0;
-  text-align: left; /* Align donation text for better readability */
+  text-align: left; 
 }
 
 /* Radio Button Group */
@@ -296,6 +296,33 @@ hr {
 .receipt-details strong {
   display: inline-block;
   width: 150px;
+}
+
+.receipt-container ul {
+  margin: 0;
+  padding: 0.5;
+  list-style-type: none;
+  margin-bottom: 1;
+}
+
+.receipt-item {
+  display: flex;
+  justify-content: space-between;
+  width: 60%;
+}
+
+.item-name {
+  flex: 1;
+}
+
+.dots {
+  margin-left: 5px;  
+  flex-grow: 1;
+  text-align: center; 
+}
+
+.item-quantity {
+  margin-left: 10px; 
 }
 
 .back-button {
