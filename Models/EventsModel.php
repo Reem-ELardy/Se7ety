@@ -119,7 +119,8 @@ class EventsModel {
         return $events;
     }
 
-    function getEventsForVolunteer($volunteerID, $dbConnection) {
+    function getEventsForVolunteer($volunteerID) {
+        $conn = DBConnection::getInstance()->getConnection();
         $sql = "
             SELECT e.ID, e.Name, e.LocationID, e.Date, e.Description, 
                    e.MaxNoOfAttendance, e.Type 
@@ -132,7 +133,7 @@ class EventsModel {
         $eventType = EventType::Other;
         $events = [];
     
-        $stmt = $dbConnection->prepare($sql);
+        $stmt = $conn->prepare($sql);
   
         $stmt->bind_param('i', $volunteerID);
     
