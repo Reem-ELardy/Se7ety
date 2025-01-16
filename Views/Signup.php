@@ -1,5 +1,3 @@
-
-
 <!DOCTYPE html>
 <html lang="en">
   <head>
@@ -8,6 +6,11 @@
     <title>Se7ety - Signup</title>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/View/style_Signup.css">
+    <style>
+      .hidden {
+        display: none;
+      }
+    </style>
   </head>
   <body>
     <div class="signup-container">
@@ -16,63 +19,86 @@
       
       <form action="/Controllers/SignupController.php" method="POST">
         <!-- Full Name -->
-        <input type="text" name="name" class="input-field" placeholder="Full Name" value="<?php echo isset($_POST['name']) ? htmlspecialchars($_POST['name']) : ''; ?>" required>
+        <input type="text" name="name" class="input-field" placeholder="Full Name" required>
 
         <!-- Age -->
-        <input type="text" name="age" class="input-field" placeholder="Age" value="<?php echo isset($_POST['age']) ? htmlspecialchars($_POST['age']) : ''; ?>" required>
+        <input type="text" name="age" class="input-field" placeholder="Age" required>
 
         <!-- Phone Number -->
-        <input type="text" name="phone" class="input-field" placeholder="Phone Number" value="<?php echo isset($_POST['phone']) ? htmlspecialchars($_POST['phone']) : ''; ?>" required>
-
-        <!-- Address Dropdown -->
+        <input type="text" name="phone" class="input-field" placeholder="Phone Number" required>
 
         <!-- City Dropdown -->
-        <select  name="CityAdress" id="parentDropdown" onchange="populateChildren()"  class="input-field" required>
+        <select name="CityAdress" id="parentDropdown" onchange="populateChildren()" class="input-field" required>
           <option value="">-- Select a City --</option>
           <?php foreach ($addressList as $parent): ?>
               <option value="<?= $parent['ID']; ?>"><?= $parent['Name']; ?></option>
           <?php endforeach; ?>
-      </select>
+        </select>
 
         <!-- District Dropdown -->
         <select name="DistrictAdress" id="DistrictAdress" class="input-field" required>
-          
           <option value="">-- Select a District --</option>
-      </select>
+        </select>
 
-        <input type="email" name="email" class="input-field" placeholder="Email" value="<?php echo isset($_POST['email']) ? htmlspecialchars($_POST['email']) : ''; ?>" required>
-        <input type="password" name="password" class="input-field" placeholder="Password" value="<?php echo isset($_POST['password']) ? htmlspecialchars($_POST['password']) : ''; ?>" required>
+        <!-- Email -->
+        <input type="email" name="email" class="input-field" placeholder="Email" required>
+        
+        <!-- Password -->
+        <input type="password" name="password" class="input-field" placeholder="Password" required>
+        
         <span style="color:red;"><?php echo isset($error) ? htmlspecialchars($error) : ''; ?></span><br>
 
+        <!-- Role Selection -->
         <div class="radio-group">
-          <label><input type="radio" name="role" value="Volunteer" <?php if (isset($_POST['role']) && $_POST['role'] == 'Volunteer') echo 'checked'; ?> required> I am a Volunteer</label>
-          <label><input type="radio" name="role" value="Donor" <?php if (isset($_POST['role']) && $_POST['role'] == 'Donor') echo 'checked'; ?>> I am a Donor</label>
-          <label><input type="radio" name="role" value="Patient" <?php if (isset($_POST['role']) && $_POST['role'] == 'Patient') echo 'checked'; ?>> I am a Patient</label>
+          <label>
+            <input type="radio" name="role" value="Volunteer" onchange="toggleVolunteerFields()"> I am a Volunteer
+          </label>
+          <label>
+            <input type="radio" name="role" value="Donor" onchange="toggleVolunteerFields()"> I am a Donor
+          </label>
+          <label>
+            <input type="radio" name="role" value="Patient" onchange="toggleVolunteerFields()"> I am a Patient
+          </label>
         </div>
 
+        <!-- Volunteer Job Dropdown -->
+        <div id="volunteer-job-dropdown" class="hidden">
+          <select name="volunteerJob" class="input-field">
+            <option value="">-- Select Job --</option>
+            <option value="Doctor">Doctor</option>
+            <option value="Nurse">Nurse</option>
+            <option value="Other">Other</option>
+          </select>
+        </div>
+
+        <!-- Volunteer Skills Dropdown -->
+        <div id="volunteer-skill-dropdown" class="hidden">
+          <select name="volunteerSkill" class="input-field" id="volunteerSkill">
+            <option value="">-- Select Skill --</option>
+            <!-- Skills will be dynamically populated via JavaScript -->
+          </select>
+        </div>
+
+        <!-- Submit Button -->
         <button type="submit" class="submit-btn">Sign up</button>
       </form>
 
+      <!-- Login Link -->
       <a href="../Views/Login.php" class="login-link">Already have an account? Login</a>
     </div>
+          <!--kada dah gahz ll controller 3la tol -->
 
-  </body>
-  <script>
-    const addressList = <?= json_encode($data['addressList']); ?>;
+    <script>
+      // Populate District Dropdown
+      const addressList = <?= json_encode($data['addressList']); ?>;
       function populateChildren() {
         const parentId = document.getElementById('parentDropdown').value;
         const childDropdown = document.getElementById('DistrictAdress');
 
-        // Reset child dropdown
         childDropdown.innerHTML = '<option value="">-- Select a District --</option>';
 
-        // Debugging logs
-        console.log("Selected Parent ID:", parentId);
-
-        // Find the selected parent
         const selectedParent = addressList.find(parent => parent.ID == parentId);
 
-        // If parent exists and has children, populate the child dropdown
         if (selectedParent && selectedParent.children) {
           selectedParent.children.forEach(child => {
             const option = document.createElement('option');
@@ -80,9 +106,43 @@
             option.textContent = child.Name;
             childDropdown.appendChild(option);
           });
-        } else {
-            console.log("No children found for selected parent.");
         }
-    }
-  </script>
+      }
+
+      // Populate Volunteer Skills Dropdown
+      const skillList = <?= json_encode($data['skillList']); ?>;
+      function populateSkills() {
+        const skillDropdown = document.getElementById('volunteerSkill');
+
+        skillDropdown.innerHTML = '<option value="">-- Select Skill --</option>';
+        skillList.forEach(skill => {
+          const option = document.createElement('option');
+          option.value = skill.id;
+          option.textContent = skill.name;
+          skillDropdown.appendChild(option);
+        });
+      }
+
+      // Toggle Volunteer Fields (Jobs and Skills)
+      function toggleVolunteerFields() {
+        const volunteerRadio = document.querySelector('input[name="role"][value="Volunteer"]');
+        const jobDropdown = document.getElementById('volunteer-job-dropdown');
+        const skillDropdown = document.getElementById('volunteer-skill-dropdown');
+
+        if (volunteerRadio && volunteerRadio.checked) {
+          jobDropdown.classList.remove('hidden');
+          skillDropdown.classList.remove('hidden');
+          populateSkills();
+        } else {
+          jobDropdown.classList.add('hidden');
+          skillDropdown.classList.add('hidden');
+        }
+      }
+
+      // Initialize state on page load
+      document.addEventListener('DOMContentLoaded', () => {
+        toggleVolunteerFields();
+      });
+    </script>
+  </body>
 </html>
