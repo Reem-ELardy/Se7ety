@@ -99,13 +99,13 @@ class Notification implements Observer {
     }
 
 
-    public function deleteNotification(int $notificationId): bool {
+    public function deleteNotification(): bool {
         $conn = DBConnection::getInstance()->getConnection();
         $sql = "UPDATE Notification SET IsDeleted = 1 WHERE ID = ?";
         $stmt = $conn->prepare($sql);
     
         if ($stmt) {
-            $stmt->bind_param('i', $notificationId);
+            $stmt->bind_param('i', $this->id);
             $result = $stmt->execute();
             $stmt->close();
             return $result;

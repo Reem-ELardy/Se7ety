@@ -225,26 +225,9 @@ class Certificate {
         }
     }
 
-    public function generateCertificateContent(): string {
-        return "Certificate of Participation\n" .
-               "Volunteer Name: " . $this->getVolunteerName() . "\n" .
-               "Event Name: " . $this->getEventName() . "\n" .
-               "Event Date: " . $this->getEventDate()->format('Y-m-d') . "\n\n" .
-               "Thank you for your contribution to making this event a success!";
-    }
-
-    public function exportToJson(IJSON $jsonAdapter): bool {
-        $filePath = __DIR__ . "/certificates/{$this->getVolunteerName()}_{$this->getEventName()}_certificate.json";  // Save in the same directory as the script
-        $data = [
-            'CertificateID' => $this->getID(),
-            'EventName' => $this->getEventName(),
-            'EventDate' =>  $this->getEventDate()->format('Y-m-d'),
-            'VolunteerName' => $this->getVolunteerName(),
-            'VolunteerID' => $this->getvolunteerID(),
-            'EventID' => $this->geteventID(),
-        ];
-
-        return $jsonAdapter->saveToJson($data, $filePath);
+    public function downloadCertificate(): bool {
+        $jsonAdapter = new CertificateToJSON($this);
+        return $jsonAdapter->exportToJson();
     }
 
 }
