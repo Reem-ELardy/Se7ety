@@ -31,7 +31,7 @@
                     <p>No events available.</p>
                 <?php endif; ?>
             </ul>
-            <button onclick="location.href='Event_Creation.html'" class="add-event-button">Add New Event</button>
+            <button onclick="location.href='Event_Creation.php'" class="add-event-button">Add New Event</button>
         </section>
     </div>
 
