@@ -2,13 +2,17 @@
 
 require_once "Event.php";
 require_once "Observers.php";
+require_once __DIR__ . '/../DB-creation/IDatabase.php';
+require_once __DIR__ . '/../DB-creation/DBProxy.php';
 
 class EventReminder implements Observer {
     private int $id;
     private Subject $event;
     private string $reminderMessage;
+    protected $dbProxy;
 
     public function __construct(Subject $event) {
+        $this->dbProxy = new DBProxy('user');
         $this->event = $event;
         $this->reminderMessage = "";
     }
@@ -43,8 +47,6 @@ class EventReminder implements Observer {
 
     // Method to create a reminder
     public function createReminder(): bool {
-        $conn = DBConnection::getInstance()->getConnection();
-        // Retrieve event details
         $eventId = $this->event->getId(); 
         $name = $this->event->getName(); 
         $location = $this->event->getLocationID(); 
@@ -58,16 +60,11 @@ class EventReminder implements Observer {
         $reminderDate = $eventDate->sub(new DateInterval('P1D'));
 
         $sql = "INSERT INTO EventReminder (EventID, Message, ReminderDate) VALUES (?, ?, ?)";
-        $stmt = $conn->prepare($sql);
+        $stmt = $this->dbProxy->prepare($sql, [$eventId, $this->reminderMessage, $reminderDate->format('Y-m-d H:i:s')]);
 
         if ($stmt) {
-            $stmt->bind_param('iss', $eventId, $this->reminderMessage, $reminderDate->format('Y-m-d H:i:s'));
-            $result = $stmt->execute();
-            if ($result) {
-                $this->id = $conn->insert_id;
-            }
-            $stmt->close();
-            return $result;
+            $this->id = $this->dbProxy->getInsertId();;
+            return $stmt;
         }
 
         return false;
@@ -76,8 +73,6 @@ class EventReminder implements Observer {
     // Method to update reminders for a specific event
     public function update(int $eventId, string $name, int $locationId, DateTime $date_time, string $description): bool {
 
-        $conn = DBConnection::getInstance()->getConnection();
-
         $updatedMessage = "UPDATED Reminder: The event '$name' is scheduled at $locationId on " . 
                           $date_time->format('Y-m-d H:i:s') . ". Description: $description.";
 
@@ -85,13 +80,10 @@ class EventReminder implements Observer {
         $sql = "UPDATE EventReminder 
                 SET Message = ? 
                 WHERE EventID = ? AND IsDeleted = 0";
-        $stmt = $conn->prepare($sql);
+        $stmt = $this->dbProxy->prepare($sql, [$updatedMessage, $eventId]);
 
         if ($stmt) {
-            $stmt->bind_param('si', $updatedMessage, $eventId);
-            $result = $stmt->execute();
-            $stmt->close();
-            return $result;
+            return $stmt;
         }
 
         return false;
@@ -120,23 +112,16 @@ class EventReminder implements Observer {
     }
 
     public function getEventReminders(int $eventId): array {
-        $conn = DBConnection::getInstance()->getConnection();
-    
         $reminders = [];
         $id = 0;
         $message = '';
         $reminderDate = '';
         $sql = "SELECT ID, Message, ReminderDate FROM EventReminder WHERE EventID = ? AND IsDeleted = 0";
-        $stmt = $conn->prepare($sql);
+        $stmt = $this->dbProxy->prepare($sql, [$eventId]);
     
         if ($stmt) {
-            $stmt->bind_param('i', $eventId);
-            $stmt->execute();
-    
-            // Bind the result columns to variables
             $stmt->bind_result($id, $message, $reminderDate);
     
-            // Fetch each row and store it in the reminders array
             while ($stmt->fetch()) {
                 $reminders[] = [
                     'id' => $id,
@@ -144,8 +129,6 @@ class EventReminder implements Observer {
                     'reminderDate' => $reminderDate
                 ];
             }
-    
-            $stmt->close();
         }
     
         return $reminders;

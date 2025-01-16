@@ -1,12 +1,19 @@
 <?php
 
 require_once "Event.php";
+require_once __DIR__ . '/../DB-creation/IDatabase.php';
+require_once __DIR__ . '/../DB-creation/DBProxy.php';
 
 class EventsModel {
 
+    protected $dbProxy;
+
+    public function __construct() {
+        $this->dbProxy = new DBProxy('user');
+    }
+
     // Function to get all events, including deleted ones
     public function getAllEvents(): array {
-        $conn = DBConnection::getInstance()->getConnection();
         $id = $maxNoOfAttendance = $locationID = $totalNoPatients = $totalNoVolunteers = 0;
         $name = $date = $description = $type = '';
         $eventType = EventType::Other;
@@ -15,12 +22,10 @@ class EventsModel {
         $query = "SELECT ID, Name, Date, Description, Type, TotalNoPatients, TotalNoVolunteers, MaxNoOfAttendance, LocationID 
                 FROM Event";
 
-        $stmt = $conn->prepare($query);
+        $stmt = $this->dbProxy->prepare($query, []);
         if (!$stmt) {
             return $events;
         }
-
-        $stmt->execute();
         $stmt->bind_result($id, $name, $date, $description, $type, $totalNoPatients, $totalNoVolunteers, $maxNoOfAttendance, $locationID);
         
         while ($stmt->fetch()) {
@@ -38,13 +43,11 @@ class EventsModel {
             $events[] = $event;
         }
 
-        $stmt->close();
         return $events;
     }
 
     // Function to get all non-deleted events
     public function getNonDeletedEvents(): array {
-        $conn = DBConnection::getInstance()->getConnection();
         $id = $maxNoOfAttendance = $locationID = $totalNoPatients = $totalNoVolunteers = 0;
         $name = $date = $description = $type = '';
         $eventType = EventType::Other;
@@ -53,12 +56,11 @@ class EventsModel {
         $query = "SELECT ID, Name, Date, Description, Type, TotalNoPatients, TotalNoVolunteers, MaxNoOfAttendance, LocationID 
                 FROM Event WHERE IsDeleted = 0";
 
-        $stmt = $conn->prepare($query);
+        $stmt = $this->dbProxy->prepare($query, []);
         if (!$stmt) {
             return $events;
         }
 
-        $stmt->execute();
         $stmt->bind_result($id, $name, $date, $description, $type, $totalNoPatients, $totalNoVolunteers, $maxNoOfAttendance, $locationID);
 
         while ($stmt->fetch()) {
@@ -76,13 +78,11 @@ class EventsModel {
             $events[] = $event;
         }
 
-        $stmt->close();
         return $events;
     }
 
     // Function to get upcoming events (non-deleted and date >= current date)
     public function getUpcomingEvents(): array {
-        $conn = DBConnection::getInstance()->getConnection();
         $id = $maxNoOfAttendance = $locationID = $totalNoPatients = $totalNoVolunteers = 0;
         $name = $date = $description = $type = '';
         $eventType = EventType::Other;
@@ -91,12 +91,11 @@ class EventsModel {
         $query = "SELECT ID, Name, Date, Description, Type, TotalNoPatients, TotalNoVolunteers, MaxNoOfAttendance, LocationID 
                 FROM Event WHERE IsDeleted = 0 AND Date >= CURDATE()";
 
-        $stmt = $conn->prepare($query);
+        $stmt = $this->dbProxy->prepare($query, []);
         if (!$stmt) {
             return $events;
         }
 
-        $stmt->execute();
         $stmt->bind_result($id, $name, $date, $description, $type, $totalNoPatients, $totalNoVolunteers, $maxNoOfAttendance, $locationID);
     
         
@@ -115,12 +114,10 @@ class EventsModel {
             $events[] = $event;
         }
 
-        $stmt->close();
         return $events;
     }
 
     function getEventsForVolunteer($volunteerID) {
-        $conn = DBConnection::getInstance()->getConnection();
         $sql = "
             SELECT e.ID, e.Name, e.LocationID, e.Date, e.Description, 
                    e.MaxNoOfAttendance, e.Type 
@@ -133,11 +130,7 @@ class EventsModel {
         $eventType = EventType::Other;
         $events = [];
     
-        $stmt = $conn->prepare($sql);
-  
-        $stmt->bind_param('i', $volunteerID);
-    
-        $stmt->execute();
+        $stmt = $this->dbProxy->prepare($sql, [$volunteerID]);
 
         $stmt->bind_result($id, $name, $locationID, $date, $description, $maxNoOfAttendance, $type);
     
@@ -155,8 +148,6 @@ class EventsModel {
             $event->setNoOfVolunteers($totalNoVolunteers);
             $events[] = $event;
         }
-
-        $stmt->close();
 
         return $events;
     }

@@ -8,6 +8,8 @@ require_once "Notification.php";
 require_once "Patient-Event.php";
 require_once "Event-Participation.php";
 require_once "ObserversIterator.php";
+require_once __DIR__ . '/../DB-creation/IDatabase.php';
+require_once __DIR__ . '/../DB-creation/DBProxy.php';
 
 enum EventType: string {
     case DonationCollect = 'Donation-Collect';
@@ -26,6 +28,7 @@ class Event implements Subject {
     private int $max_no_of_attendance;
     private EventType $type;
     private int $isDeleted;
+    protected $dbProxy;
 
     
     /** @var array */
@@ -35,6 +38,7 @@ class Event implements Subject {
         int $id, string $name, int $locationID, DateTime $date_time, 
         string $description, int $max_no_of_attendance, EventType $type
     ) {
+        $this->dbProxy = new DBProxy('user');
         $this->id = $id;
         $this->name = $name;
         $this->locationID = $locationID;
@@ -127,26 +131,19 @@ class Event implements Subject {
     }
 
     public function createEvent() {
-        $conn = DBConnection::getInstance()->getConnection();
-        
         $query = "INSERT INTO Event (Name, Date, Description, Type, TotalNoPatients, TotalNoVolunteers, MaxNoOfAttendance, LocationID) 
             VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
 
         $date = $this->date_time->format('Y-m-d');
         $typeString = $this->type->value;
-        $stmt = $conn->prepare($query);
+        $stmt = $this->dbProxy->prepare($query,[$this->name, $date, $this->description, $typeString, $this->no_of_patients, $this->no_of_volunteers, $this->max_no_of_attendance, $this->locationID]);
         if ($stmt) {
-            $stmt->bind_param('ssssiiii', $this->name, $date, $this->description, $typeString, $this->no_of_patients, $this->no_of_volunteers, $this->max_no_of_attendance, $this->locationID);
-            $result = $stmt->execute();
-            if ($result) {
-                $this->id = $conn->insert_id;
-            }
-
-            $stmt->close();
+            
+            $this->id = $this->dbProxy->getInsertId();
             $EventReminder = new EventReminder($this);
             $EventReminder->createReminder();
             $this->registerObserver($EventReminder);
-            return $result;
+            return $stmt;
         }
     
         return false;
@@ -160,47 +157,36 @@ class Event implements Subject {
         int $max_no_of_attendance, 
         EventType $type
     ): bool {
-        $conn = DBConnection::getInstance()->getConnection();
-    
         $query = "UPDATE Event 
                   SET Name = ?, Date = ?, Description = ?, MaxNoOfAttendance = ?, Type = ?, LocationID = ? 
                   WHERE ID = ? AND IsDeleted = 0";
-        $stmt = $conn->prepare($query);
+
+        $date = $date_time->format('Y-m-d');
+        $typeString = $type->value;
+        $stmt = $this->dbProxy->prepare($query,[$name, $date, $description, $max_no_of_attendance, $typeString, $locationID, $this->id]);
         if (!$stmt) {
             return false;
         }
     
-        $date = $date_time->format('Y-m-d');
-        $typeString = $type->value;
-    
-        $stmt->bind_param("sssisii", $name, $date, $description, $max_no_of_attendance, $typeString, $locationID, $this->id);
-
         $this->setMeasurments($name, $locationID, $date_time, $description, $max_no_of_attendance, $type);
-    
-        $result = $stmt->execute();
-        $stmt->close();
         
-        return $result;
+        return $stmt;
     }
     
 
     public function readEvent(int $id): bool {
-        $conn = DBConnection::getInstance()->getConnection();
-    
+
         $query = "SELECT ID, Name, Date, Description, Type, TotalNoPatients, TotalNoVolunteers, MaxNoOfAttendance, LocationID 
                   FROM Event 
                   WHERE ID = ? AND IsDeleted = 0";
     
-        $stmt = $conn->prepare($query);
+        $stmt = $this->dbProxy->prepare($query, [$id]);
         if (!$stmt) {
             return false;
         }
         
         $name = $date = $description = $type = '';
         $totalNoPatients = $totalNoVolunteers = $maxNoOfAttendance = $locationID = 0;
-
-        $stmt->bind_param("i", $id);
-        $stmt->execute();
         $stmt->bind_result($id, $name, $date, $description, $type, $totalNoPatients, $totalNoVolunteers, $maxNoOfAttendance, $locationID);
     
         if ($stmt->fetch()) {
@@ -218,29 +204,22 @@ class Event implements Subject {
                 'Other' => EventType::Other,
                 default => throw new InvalidArgumentException("Invalid event type: $type"),
             };
-    
-            $stmt->close();
             return true;
         } else {
-            $stmt->close();
             return false;
         }
     }
     
     public function deleteEvent() {
-        $conn = DBConnection::getInstance()->getConnection();
         
         $query = "UPDATE Event SET IsDeleted = 1 WHERE ID = ?";
-        $stmt = $conn->prepare($query);
+        $stmt = $this->dbProxy->prepare($query, [$this->id]);
         
         if (!$stmt) {
             return false;
         }
         
-        $stmt->bind_param("i", $this->id);
         $this->isDeleted = 1;
-        $result = $stmt->execute();
-        $stmt->close();
         
         // Refresh observers from DB
         $this->getEventObservers();
@@ -250,58 +229,45 @@ class Event implements Subject {
             $this->removeObserver($observer); 
         }
     
-        return $result;
+        return $stmt;
     }
     
 
 
     public function registerObserver(Observer $o): void {
-        $conn = DBConnection::getInstance()->getConnection();
         $observerType = ($o instanceof Notification) ? 0 : 1;
         $observerId = $o->getId();
     
-        $stmt = $conn->prepare("
+        $stmt = $this->dbProxy->prepare("
             INSERT INTO Observer (EventID, ObserverID, Type, IsDeleted)
             VALUES (?, ?, ?, ?)
-        ");
-        $stmt->bind_param('iiii', $this->id, $observerId ,$observerType, $this->isDeleted);
-        $stmt->execute();
+        ", [$this->id, $observerId, $observerType, $this->isDeleted]);
     }
     
     public function removeObserver(Observer $o): void {
-
-        $conn = DBConnection::getInstance()->getConnection();
-
         $observerType = ($o instanceof Notification) ? 0 : 1;
         $observerId = $o->getId();
     
-        $stmt = $conn->prepare("
+        $stmt = $this->dbProxy->prepare("
             UPDATE Observer 
             SET IsDeleted = 1
             WHERE EventID = ? AND Type = ? AND ObserverID = ? AND IsDeleted = 0
-        ");
-        $stmt->bind_param('iii', $this->id, $observerId ,$observerType);
-        $stmt->execute();
+        ", [$this->id, $observerType, $observerId]);
     }
 
 
     public function fetchObserversData(): array {
-        $conn = DBConnection::getInstance()->getConnection();
         $id = $type = $observerId = 0;
         $observersData = [];
         $sql = "SELECT ID, Type, ObserverID FROM Observer WHERE EventID = ? AND IsDeleted = 0";
-        $stmt = $conn->prepare($sql);
+        $stmt = $this->dbProxy->prepare($sql, [$this->id]);
     
         if ($stmt) {
-            $stmt->bind_param('i', $this->id);
-            $stmt->execute();
             $stmt->bind_result($id, $type, $observerId);
     
             while ($stmt->fetch()) {
                 $observersData[] = ['id' => $id, 'type' => $type, 'observerId' => $observerId];
             }
-    
-            $stmt->close();
         }
     
         return $observersData;
@@ -365,17 +331,13 @@ class Event implements Subject {
 
 
     public function getNumberofPatients(): int {
-        $conn = DBConnection::getInstance()->getConnection();
         $count = 0;
         $sql = "SELECT COUNT(*) FROM PatientEvent WHERE EventID = ?";
-        $stmt = $conn->prepare($sql);
+        $stmt = $this->dbProxy->prepare($sql, [$this->id]);
 
         if ($stmt) {
-            $stmt->bind_param('i', $this->id);
-            $stmt->execute();
             $stmt->bind_result($count);
             $stmt->fetch();
-            $stmt->close();
             return $count;
         }
 
@@ -383,65 +345,41 @@ class Event implements Subject {
     }
 
     public function addVolunteer(): bool {
-        $conn = DBConnection::getInstance()->getConnection();
-
         $query = "UPDATE Event SET TotalNoVolunteers = TotalNoVolunteers + 1 WHERE ID = ?";
-        $stmt = $conn->prepare($query);
+        $stmt = $this->dbProxy->prepare($query, [$this->id]);
         if (!$stmt) {
             return false;
         }
-
-        $stmt->bind_param("i", $this->id);
-        $result = $stmt->execute();
-        $stmt->close();
-        return $result;
+        return $stmt;
     }
 
 
     public function removeVolunteer(): bool {
-        $conn = DBConnection::getInstance()->getConnection();
-
         $query = "UPDATE Event SET TotalNoVolunteers = TotalNoVolunteers - 1 WHERE ID = ?";
-        $stmt = $conn->prepare($query);
+        $stmt = $this->dbProxy->prepare($query, [$this->id]);
         if (!$stmt) {
             return false;
         }
-
-        $stmt->bind_param("i", $this->id);
-        $result = $stmt->execute();
-        $stmt->close();
-        return $result;
+        return $stmt;
     }
 
 
     public function addPatient(): bool {
-        $conn = DBConnection::getInstance()->getConnection();
-
         $query = "UPDATE Event SET TotalNoPatients = TotalNoPatients + 1 WHERE ID = ?";
-        $stmt = $conn->prepare($query);
+        $stmt = $this->dbProxy->prepare($query, [$this->id]);
         if (!$stmt) {
             return false;
         }
-
-        $stmt->bind_param("i", $this->id);
-        $result = $stmt->execute();
-        $stmt->close();
-        return $result;
+        return $stmt;
     }
 
     public function removePatient(): bool {
-        $conn = DBConnection::getInstance()->getConnection();
-
         $query = "UPDATE Event SET TotalNoPatients = TotalNoPatients - 1 WHERE ID = ?";
-        $stmt = $conn->prepare($query);
+        $stmt = $this->dbProxy->prepare($query, [$this->id]);
         if (!$stmt) {
             return false;
         }
-
-        $stmt->bind_param("i", $this->id);
-        $result = $stmt->execute();
-        $stmt->close();
-        return $result;
+        return $stmt;
     }
 
     public function addPatientToEvent(int $patientId): void {
@@ -480,7 +418,6 @@ class Event implements Subject {
                 $this->removePatient();
                 $PatientNotification = new Notification($patientId, "You have been deleted from the event: ".$this->name);
                 $PatientNotification->createNotification();
-                $this->registerObserver($PatientNotification);
                 $patientTicket = new Ticket($this->id, $patientId);
                 $patientTicket->readTicket();
                 $patientTicket->deleteTicket();
@@ -497,7 +434,6 @@ class Event implements Subject {
                 $this->removeVolunteer();
                 $VolunteerNotification = new Notification($volunteerId, "You have been deleted from the event: ".$this->name);
                 $VolunteerNotification->createNotification();
-                $this->registerObserver($VolunteerNotification);
             }
         }
     }

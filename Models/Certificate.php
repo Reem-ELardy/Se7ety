@@ -1,5 +1,8 @@
 <?php
 
+require_once __DIR__ . '/../DB-creation/IDatabase.php';
+require_once __DIR__ . '/../DB-creation/DBProxy.php';
+
 class Certificate {
     private int $ID;
     private string $Event_Name;
@@ -7,8 +10,10 @@ class Certificate {
     private string $Volunteer_Name;
     private int $volunteerID;
     private int $eventID;
+    protected $dbProxy;
 
     public function __construct(int $eventID, int $volunteerID) {
+        $this->dbProxy = new DBProxy('user');
         $this->eventID = $eventID;
         $this->volunteerID = $volunteerID;
         $this->ID = 0;
@@ -72,23 +77,15 @@ class Certificate {
     }
 
     public function createCertificate() {
-        $conn = DBConnection::getInstance()->getConnection();
         $query = "INSERT INTO Certificate (VolunteerID, EventID, IsDeleted) VALUES (?, ?, 0)";
-        $stmt = $conn->prepare($query);
+        $stmt = $this->dbProxy->prepare($query, [$this->volunteerID, $this->eventID]);
         if (!$stmt) {
             return false;
         }
 
-        $stmt->bind_param("ii", $this->volunteerID, $this->eventID);
-        $result = $stmt->execute();
-        if ($result) {
-            $this->ID = $conn->insert_id;
-        }
+        $this->ID = $this->dbProxy->getInsertId();
 
-        $stmt->close();
-        return $result;
-
-        return $result;
+        return true;
     }
 
     // public function updateCertificate(int $volunteerID, int $eventID){
@@ -110,16 +107,12 @@ class Certificate {
     // }
 
     public function readCertificate(int $id): bool {
-        $conn = DBConnection::getInstance()->getConnection();
-
         $query = "SELECT VolunteerID, EventID FROM Certificate WHERE ID = ? AND IsDeleted = 0";
-        $stmt = $conn->prepare($query);
+        $stmt = $this->dbProxy->prepare($query, [$id]);
         if (!$stmt) {
             return null;
         }
 
-        $stmt->bind_param("i", $id);
-        $stmt->execute();
         $stmt->bind_result($this->volunteerID, $this->eventID);
         $stmt->fetch();
 
@@ -127,63 +120,47 @@ class Certificate {
             $this->ID = $id;
             $this->fetchEventDetails($this->eventID);
             $this->fetchVolunteerName($this->volunteerID);         
-            $stmt->close();
             return true;
         }
 
-        $stmt->close();
         return false;
     }
 
     public function getCertificatesByVolunteerId(int $volunteerId): ?array {
-        $conn = DBConnection::getInstance()->getConnection();
         $sql = "SELECT * FROM Certificate WHERE VolunteerID = ? AND IsDeleted = 0";
-        $stmt = $conn->prepare($sql);
+        $stmt = $this->dbProxy->prepare($sql, [$volunteerId]);
 
         if ($stmt) {
-            $stmt->bind_param('i', $volunteerId);
-            if ($stmt->execute()) {
-                $result = $stmt->get_result();
-                $certificates = [];
-                while ($row = $result->fetch_assoc()) {
-                    $certificates[] = $row;
-                }
-                $stmt->close();
-                return $certificates;
+            $result = $stmt->get_result();
+            $certificates = [];
+            while ($row = $result->fetch_assoc()) {
+                $certificates[] = $row;
             }
-            $stmt->close();
+
+            return $certificates;
+
         }
 
         return null;
     }
 
     public function deleteCertificate(): bool {
-        $conn = DBConnection::getInstance()->getConnection();
 
         $query = "UPDATE Certificate SET IsDeleted = 1 WHERE ID = ?";
-        $stmt = $conn->prepare($query);
+        $stmt = $this->dbProxy->prepare($query, [$this->ID]);
         if (!$stmt) {
             return false;
         }
 
-        $id = $this->getID();
-        $stmt->bind_param("i", $id);
-        $result = $stmt->execute();
-        $stmt->close();
-
-        return $result;
+        return $stmt;
     }
 
     private function fetchEventDetails(int $eventID): void {
-        $conn = DBConnection::getInstance()->getConnection();
-
         $query = "SELECT Name, Date FROM Event WHERE ID = ?";
-        $stmt = $conn->prepare($query);
+        $stmt = $this->dbProxy->prepare($query, [$eventID]);
         $eventName = ''; 
         $eventDate = '';
         if ($stmt) {
-            $stmt->bind_param("i", $eventID);
-            $stmt->execute();
             $stmt->bind_result($eventName, $eventDate);
 
             if ($stmt->fetch()) {
@@ -193,28 +170,21 @@ class Certificate {
                 $this->Event_Name = 'Unknown Event';
                 $this->Event_Date = new DateTime();
             }
-
-
-            $stmt->close();
         }
     }
 
     private function fetchVolunteerName(int $volunteerID): void {
-        $conn = DBConnection::getInstance()->getConnection();
 
         $query = "SELECT Name 
                     FROM Volunteer 
                     JOIN Person ON Volunteer.PersonID = Person.ID 
                     WHERE Volunteer.ID = ?";
-        $stmt = $conn->prepare($query);
+        $stmt = $this->dbProxy->prepare($query, [$volunteerID]);
         $volunteerName = '';
         if ($stmt) {
-            $stmt->bind_param("i", $volunteerID);
-            $stmt->execute();
             $stmt->bind_result($volunteerName);
 
             if ($stmt->fetch()) {
-                // Volunteer name is now set in the class
                 $this->Volunteer_Name = $volunteerName;
             } else {
                 $this->Volunteer_Name = 'Unknown Volunteer';

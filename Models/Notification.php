@@ -2,14 +2,18 @@
 
 require_once "Event.php";
 require_once "Observers.php";
+require_once __DIR__ . '/../DB-creation/IDatabase.php';
+require_once __DIR__ . '/../DB-creation/DBProxy.php';
 
 class Notification implements Observer {
     private int $id;
     private int $recieverId;
     private string $message;
     private bool $sent;
+    protected $dbProxy;
 
     public function __construct(int $receiverId, string $message) {
+        $this->dbProxy = new DBProxy('user');
         $this->recieverId = $receiverId;
         $this->message = $message;
         $this->sent = false;
@@ -52,8 +56,6 @@ class Notification implements Observer {
     }
 
     public function update(int $eventId, string $name, int $locationId, DateTime $date_time, string $description): bool {
-        $conn = DBConnection::getInstance()->getConnection();
-        // Update the message in the class property
         $updatedMessage = "Event Update: $name at $locationId on " . $date_time->format('Y-m-d H:i:s'). 
                          ". Description: $description.";
         
@@ -63,17 +65,10 @@ class Notification implements Observer {
                 SET Message = ? 
                 WHERE ID = ? AND IsDeleted = 0";
     
-        $stmt = $conn->prepare($sql);
+        $stmt = $this->dbProxy->prepare($sql, [$updatedMessage, $this->id]);
     
         if ($stmt) {
-            // Bind the message and notification ID
-            $stmt->bind_param('si', $updatedMessage, $this->id);
-    
-            // Execute the query and check the result
-            $result = $stmt->execute();
-            $stmt->close();
-    
-            return $result;
+            return $stmt;
         }
     
         return false;
@@ -81,18 +76,13 @@ class Notification implements Observer {
     
 
     public function createNotification(): bool {
-        $conn = DBConnection::getInstance()->getConnection();
         $sql = "INSERT INTO Notification (ReceiverID, Message, Sent) VALUES (?, ?, 0)";
-        $stmt = $conn->prepare($sql);
+        $stmt = $this->dbProxy->prepare($sql, [$this->recieverId, $this->message]);
 
         if ($stmt) {
-            $stmt->bind_param('is', $this->recieverId, $this->message);
-            $result = $stmt->execute();
-            if ($result) {
-                $this->id = $conn->insert_id;
-            }
-            $stmt->close();
-            return $result;
+
+            $this->id = $this->dbProxy->getInsertId();
+            return $stmt;
         }
 
         return false;
@@ -100,15 +90,11 @@ class Notification implements Observer {
 
 
     public function deleteNotification(): bool {
-        $conn = DBConnection::getInstance()->getConnection();
         $sql = "UPDATE Notification SET IsDeleted = 1 WHERE ID = ?";
-        $stmt = $conn->prepare($sql);
+        $stmt = $this->dbProxy->prepare($sql, [$this->id]);
     
         if ($stmt) {
-            $stmt->bind_param('i', $this->id);
-            $result = $stmt->execute();
-            $stmt->close();
-            return $result;
+            return $stmt;
         }
     
         return false;
@@ -116,22 +102,17 @@ class Notification implements Observer {
     
 
     public function getNotificationsByReceiverId(int $receiverId): ?array {
-        $conn = DBConnection::getInstance()->getConnection();
         $sql = "SELECT * FROM Notification WHERE ReceiverID = ? AND Sent = 0 AND IsDeleted = 0 ORDER BY CreatedAt DESC";
-        $stmt = $conn->prepare($sql);
+        $stmt = $this->dbProxy->prepare($sql, [$receiverId]);
     
         if ($stmt) {
-            $stmt->bind_param('i', $receiverId);
-            if ($stmt->execute()) {
-                $result = $stmt->get_result();
-                $notifications = [];
-                while ($row = $result->fetch_assoc()) {
-                    $notifications[] = $row;
-                }
-                $stmt->close();
-                return $notifications;
+            $result = $stmt->get_result();
+            $notifications = [];
+            while ($row = $result->fetch_assoc()) {
+                $notifications[] = $row;
             }
             $stmt->close();
+            return $notifications;
         }
     
         return null;

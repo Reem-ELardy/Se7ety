@@ -1,5 +1,8 @@
 <?php
 
+require_once __DIR__ . '/../DB-creation/IDatabase.php';
+require_once __DIR__ . '/../DB-creation/DBProxy.php';
+
 class Ticket {
     private $id;
     private $eventID;
@@ -7,8 +10,10 @@ class Ticket {
     private $dateTime;
     private string $Event_Name;
     private string $Patient_Name;
+    protected $dbProxy;
 
     public function __construct($eventID, $patientID, DateTime $dateTime = null) {
+        $this->dbProxy = new DBProxy('user');
         $this->eventID = $eventID;
         $this->patientID = $patientID;
         $this->dateTime = $dateTime;
@@ -67,40 +72,29 @@ class Ticket {
     
 
     public function createTicket() {
-        $conn = DBConnection::getInstance()->getConnection();
-
         $query = "INSERT INTO Ticket (EventID, PatientID, date_time) VALUES (?, ?, ?)";
-        $stmt = $conn->prepare($query);
+        $dateTimeFormatted = $this->dateTime->format('Y-m-d H:i:s');
+        $stmt = $this->dbProxy->prepare($query, [$this->eventID, $this->patientID, $dateTimeFormatted]);
 
         if (!$stmt) {
             return false;
         }
 
-        $dateTimeFormatted = $this->dateTime->format('Y-m-d H:i:s');
-        $stmt->bind_param("iis", $this->eventID, $this->patientID, $dateTimeFormatted);
+        $this->id = $this->dbProxy->getInsertId();
 
-        $result = $stmt->execute();
-        if ($result) {
-            $this->id = $conn->insert_id;
-        }
-
-        return $result;
+        return $stmt;
     }
 
     public function readTicket() {
-        $conn = DBConnection::getInstance()->getConnection();
-
         $query = "SELECT t.ID, t.EventID, t.PatientID, t.date_time
                 FROM Ticket t
                 WHERE t.EventID = ? AND t.PatientID = ? AND t.IsDeleted = 0";
-        $stmt = $conn->prepare($query);
+        $stmt = $this->dbProxy->prepare($query, [$this->eventID, $this->patientID]);
 
         if (!$stmt) {
             return false;
         }
 
-        $stmt->bind_param("ii", $this->eventID, $this->patientID);
-        $stmt->execute();
         $result = $stmt->get_result();
 
         if ($result->num_rows > 0) {
@@ -116,50 +110,39 @@ class Ticket {
     }
 
     public function updateTicket($eventID, $patientID, DateTime $dateTime) {
-        $conn = DBConnection::getInstance()->getConnection();
-
         $query = "UPDATE Ticket SET 
                     EventID = ?,
                     PatientID = ?,
                     date_time = ?
                   WHERE ID = ?";
-        $stmt = $conn->prepare($query);
+
+        $dateTimeFormatted = $dateTime->format('Y-m-d H:i:s');
+        $stmt = $this->dbProxy->prepare($query, [$eventID, $patientID, $dateTimeFormatted, $this->id]);
 
         if (!$stmt) {
             return false;
         }
-
-        $dateTimeFormatted = $dateTime->format('Y-m-d H:i:s');
-        $stmt->bind_param("iisi", $eventID, $patientID, $dateTimeFormatted, $this->id);
 
         return $stmt->execute();
     }
 
     public function deleteTicket() {
-        $conn = DBConnection::getInstance()->getConnection();
-    
         $query = "UPDATE Ticket SET IsDeleted = 1 WHERE ID = ?";
-        $stmt = $conn->prepare($query);
+        $stmt = $this->dbProxy->prepare($query, [$this->id]);
     
         if (!$stmt) {
             return false;
         }
     
-        $stmt->bind_param("i", $this->id);
-    
         return $stmt->execute();
     }
 
     private function fetchEventDetails(int $eventID): void {
-        $conn = DBConnection::getInstance()->getConnection();
-
         $query = "SELECT Name, Date FROM Event WHERE ID = ?";
-        $stmt = $conn->prepare($query);
+        $stmt = $this->dbProxy->prepare($query, [$eventID]);
         $eventName = ''; 
         $eventDate = '';
         if ($stmt) {
-            $stmt->bind_param("i", $eventID);
-            $stmt->execute();
             $stmt->bind_result($eventName, $eventDate);
 
             if ($stmt->fetch()) {
@@ -170,23 +153,17 @@ class Ticket {
                 $this->dateTime = new DateTime();
             }
 
-
-            $stmt->close();
         }
     }
 
     private function fetchPatientName(int $PatientID): void {
-        $conn = DBConnection::getInstance()->getConnection();
-
         $query = "SELECT Name 
                     FROM Patient 
                     JOIN Person ON Patient.PersonID = Person.ID 
                     WHERE Patient.ID = ?";
-        $stmt = $conn->prepare($query);
+        $stmt = $this->dbProxy->prepare($query, [$PatientID]);
         $PatientName = '';
         if ($stmt) {
-            $stmt->bind_param("i", $PatientID);
-            $stmt->execute();
             $stmt->bind_result($PatientName);
 
             if ($stmt->fetch()) {
@@ -194,9 +171,6 @@ class Ticket {
             } else {
                 $this->Patient_Name = 'Unknown Patient';
             }
-
-
-            $stmt->close();
         }
     }
     
