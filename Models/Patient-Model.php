@@ -94,7 +94,7 @@ class Patient extends Person {
     }
 
     public function updatePatient() {
-        $personUpdated = $this->updatePerson([$this->name, $this->age, $this->password, $this->email, $this->addressId, $this->personId]);
+        $personUpdated = $this->updatePerson([$this->name, $this->age, $this->password, $this->email, $this->addressId,$this->phone, $this->personId]);
 
         if (!$personUpdated) {
             return false;  
@@ -112,7 +112,7 @@ class Patient extends Person {
 
     public function login($email, $enteredPassword) {
         $email = trim($email);
-        $query = "SELECT Person.ID as PersonID, Person.Name, Person.Age, Person.Password, Person.Email, Person.AddressID, Patient.ID as PatientID
+        $query = "SELECT Person.ID as PersonID, Person.Name, Person.Age, Person.Password, Person.Email, Person.AddressID, Person.Phone, Patient.ID as PatientID
                   FROM Patient 
                   INNER JOIN Person ON Patient.PersonID = Person.ID 
                   WHERE Person.Email = ?
@@ -121,14 +121,14 @@ class Patient extends Person {
 
         $stmt = $this->dbProxy->prepare($query, [$email]);
 
-        $stmt->bind_result($this->personId, $this->name, $this->age, $this->password, $this->email, $this->addressId, $this->id);
+        $stmt->bind_result($this->personId, $this->name, $this->age, $this->password, $this->email, $this->addressId,$this->phone, $this->id);
         if ($stmt->fetch() && $enteredPassword === $this->password && !$this->IsDeleted) {
             return true;
         }
         return false;
     }
 
-    public function signup($name, $age, $password, $email) {
+    public function signup($name, $age, $password, $email,$phone) {
         // Input validation (you can expand this to include more robust checks)
         if (empty($name) || empty($age) || empty($password) || empty($email)) {
             return false;
@@ -143,6 +143,7 @@ class Patient extends Person {
             $this->age = $age;
             $this->password = $password;
             $this->email = $email;
+            $this->phone=$phone;
         
             // Use the createPerson method to add the new user to the database
             $result = $this->createPatient();
@@ -158,14 +159,14 @@ class Patient extends Person {
     public function readPatient($patientId) {
 
         // Load the volunteer's details based on their ID
-        $query = "SELECT Person.ID as PersonID, Person.Name, Person.Age, Person.Password, Person.Email, Person.AddressID, Patient.ID as PatientID
+        $query = "SELECT Person.ID as PersonID, Person.Name, Person.Age, Person.Password, Person.Email, Person.AddressID, Person.Phone,Patient.ID as PatientID
                   FROM Patient 
                   INNER JOIN Person ON Patient.PersonID = Person.ID 
                   WHERE Patient.ID = ?";
         
         $stmt = $this->dbProxy->prepare($query, [$patientId]);
 
-        $stmt->bind_result($this->personId, $this->name, $this->age, $this->password, $this->email, $this->addressId, $this->id);
+        $stmt->bind_result($this->personId, $this->name, $this->age, $this->password, $this->email, $this->addressId,$this->phone, $this->id);
 
         if ($stmt->fetch()) {
             return true;

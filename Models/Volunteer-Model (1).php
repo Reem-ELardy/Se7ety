@@ -118,7 +118,7 @@ class Volunteer extends Person {
     public function login($email, $enteredPassword) {
         $email = trim($email);
     
-        $query = "SELECT Person.ID AS PersonID, Person.Name, Person.Age, Person.Password, Person.Email, Person.AddressID, Volunteer.ID AS VolunteerID, Person.IsDeleted
+        $query = "SELECT Person.ID AS PersonID, Person.Name, Person.Age, Person.Password, Person.Email, Person.AddressID,Person.Phone Volunteer.ID AS VolunteerID, Person.IsDeleted
                   FROM Volunteer 
                   INNER JOIN Person ON Volunteer.PersonID = Person.ID 
                   WHERE Person.Email = ?
@@ -127,7 +127,7 @@ class Volunteer extends Person {
     
         // Prepare the query and handle errors
         $stmt = $this->dbProxy->prepare($query, [$email]);
-        $stmt->bind_result($this->personId, $this->name, $this->age, $this->password, $this->email, $this->addressId, $this->id, $this->IsDeleted);
+        $stmt->bind_result($this->personId, $this->name, $this->age, $this->password, $this->email, $this->addressId,$this->phone, $this->id, $this->IsDeleted);
 
         // Fetch the results and validate the password
         if ($stmt->fetch()) {
@@ -140,7 +140,7 @@ class Volunteer extends Person {
     }
     
 
-    public function signup($name, $age, $password, $email) {
+    public function signup($name, $age, $password, $email,$phone) {
         // Input validation (you can expand this to include more robust checks)
         if (empty($name) || empty($age) || empty($password) || empty($email)) {
             return false;
@@ -155,6 +155,7 @@ class Volunteer extends Person {
             $this->age = $age;
             $this->password = $password;
             $this->email = $email;
+            $this->phone=$phone;
         
             // Use the createPerson method to add the new user to the database
             $result = $this->createVolunteer();
@@ -189,7 +190,7 @@ class Volunteer extends Person {
     }
 
     public function updateVolunteer() {
-        $personUpdated = $this->updatePerson([$this->name, $this->age, $this->password, $this->email, $this->addressId, $this->personId]);
+        $personUpdated = $this->updatePerson([$this->name, $this->age, $this->password, $this->email, $this->addressId,$this->phone, $this->personId]);
 
         if (!$personUpdated) {
             return false;  // Person update failed
@@ -208,7 +209,7 @@ class Volunteer extends Person {
 
     public function readVolunteer($volunteerId) {
         // Load the volunteer's details based on their ID
-        $query = "SELECT Person.ID as PersonID, Person.Name, Person.Age, Person.Password, Person.Email, Person.AddressID, Volunteer.ID as VolunteerID, Volunteer.Job, Volunteer.VolunteerHours, Volunteer.Available, Volunteer.Gender
+        $query = "SELECT Person.ID as PersonID, Person.Name, Person.Age, Person.Password, Person.Email, Person.AddressID,Person.Phone, Volunteer.ID as VolunteerID, Volunteer.Job, Volunteer.VolunteerHours, Volunteer.Available, Volunteer.Gender
                   FROM Volunteer 
                   INNER JOIN Person ON Volunteer.PersonID = Person.ID 
                   WHERE Volunteer.ID = ?";
@@ -217,7 +218,7 @@ class Volunteer extends Person {
         $stmt = $this->dbProxy->prepare($query, [$volunteerId]);
 
 
-        $stmt->bind_result($this->personId, $this->name, $this->age, $this->password, $this->email, $this->addressId, $this->id, $this->job, $this->volunteerHours, $this->available, $this->gender);
+        $stmt->bind_result($this->personId, $this->name, $this->age, $this->password, $this->email, $this->addressId,$this->phone, $this->id, $this->job, $this->volunteerHours, $this->available, $this->gender);
 
         if ($stmt->fetch()) {
             return true;

@@ -36,22 +36,22 @@ class PersonFactory{
         }
         
     }
-    public function SignupFactory($name, $age, $email, $password, $role,$AddressID) {
+    public function SignupFactory($name, $age, $email, $password, $role,$AddressID,$phone) {
         $user = null;
         $result = null;
         switch ($role) {
             case 'Volunteer':
                 $user = new Volunteer(name:$name, age:$age, email:$email, password:$password,addressId:$AddressID);
-                $result = $user->signup($name, $age, $password, $email);
+                $result = $user->signup($name, $age, $password, $email,$phone);
                 break;
             case 'Donor':
 
                 $user = new Donor(name:$name, age:$age, email:$email, password:$password,addressId:$AddressID);
-                $result = $user->signup($name, $age, $password, $email);
+                $result = $user->signup($name, $age, $password, $email,$phone);
                 break;
             case 'Patient':
                 $user = new Patient(name:$name, age:$age, email:$email, password:$password,addressId:$AddressID);
-                $result = $user->signup($name, $age, $password, $email);
+                $result = $user->signup($name, $age, $password, $email,$phone);
                 
                 break;
             default:

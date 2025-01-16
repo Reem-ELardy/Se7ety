@@ -8,9 +8,9 @@ class Donor extends Person {
     protected $personId;
 
 
-    public function __construct($id = null, $personId = null, $name = "", $age = 0, $password = "", $email = "", $addressId = null, $IsDeleted = false) {
+    public function __construct($id = null, $personId = null, $name = "", $age = 0, $password = "", $email = "", $addressId = null, $phone='',$IsDeleted = false) {
         // Initialize the parent class (Person)
-        parent::__construct($id, $name, $age, $password, $email, $addressId, $IsDeleted);
+        parent::__construct($id, $name, $age, $password, $email, $addressId, $IsDeleted,$phone);
         $this->personId = $personId;
     }
 
@@ -47,7 +47,7 @@ class Donor extends Person {
     public function login($email, $enteredPassword) {
         $email = trim($email);
 
-        $query = "SELECT Person.ID as PersonID, Person.Name, Person.Age, Person.Password, Person.Email, Person.AddressID, Donor.ID as DonorID
+        $query = "SELECT Person.ID as PersonID, Person.Name, Person.Age, Person.Password, Person.Email, Person.AddressID,Person.Phone ,Donor.ID as DonorID
                   FROM Donor 
                   INNER JOIN Person ON Donor.PersonID = Person.ID 
                   WHERE Person.Email = ? 
@@ -60,7 +60,7 @@ class Donor extends Person {
         }
 
         // Bind the result variables
-        $stmt->bind_result($this->personId, $this->name, $this->age, $this->password, $this->email, $this->addressId, $this->id);
+        $stmt->bind_result($this->personId, $this->name, $this->age, $this->password, $this->email, $this->addressId,$this->phone, $this->id);
         
         // Fetch and validate login
         if ($stmt->fetch() && $enteredPassword === $this->password) {
@@ -69,7 +69,7 @@ class Donor extends Person {
         return false;
     }
 
-    public function signup($name, $age, $password, $email) {
+    public function signup($name, $age, $password, $email,$phone) {
         // Input validation (you can expand this to include more robust checks)
         if (empty($name) || empty($age) || empty($password) || empty($email)) {
             return false;
@@ -85,6 +85,7 @@ class Donor extends Person {
             $this->age = $age;
             $this->password = $password;
             $this->email = $email;
+            $this->phone=$phone;
 
             // Use the createDonor method to add the new user to the database
             $result = $this->createDonor();
@@ -100,7 +101,7 @@ class Donor extends Person {
     // Update Donor record
     public function updateDonor() {
         // Update the Person record (related to the donor)
-        $personUpdated = $this->updatePerson([$this->name, $this->age, $this->password, $this->email, $this->addressId, $this->personId]);
+        $personUpdated = $this->updatePerson([$this->name, $this->age, $this->password, $this->email, $this->addressId, $this->phone,$this->personId]);
 
         if (!$personUpdated) {
             return false;  // Person update failed
@@ -117,7 +118,7 @@ class Donor extends Person {
 
     public function readDonor($donorId) {
         // First, load the donor's details based on their ID
-        $query = "SELECT Person.ID as PersonID, Person.Name, Person.Age, Person.Password, Person.Email, Person.AddressID, Donor.ID as DonorID
+        $query = "SELECT Person.ID as PersonID, Person.Name, Person.Age, Person.Password, Person.Email, Person.AddressID,Person.Phone, Donor.ID as DonorID
                   FROM Donor 
                   INNER JOIN Person ON Donor.PersonID = Person.ID 
                   WHERE Donor.ID = ?";
@@ -128,7 +129,7 @@ class Donor extends Person {
         }
 
         // Bind the result to class properties
-        $stmt->bind_result($this->personId, $this->name, $this->age, $this->password, $this->email, $this->addressId, $this->id);
+        $stmt->bind_result($this->personId, $this->name, $this->age, $this->password, $this->email, $this->addressId,$this->phone, $this->id);
 
         // Fetch the result
         if ($stmt->fetch()) {

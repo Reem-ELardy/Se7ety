@@ -119,6 +119,6 @@ abstract class Person {
     
     abstract public function login($email, $enteredPassword);
     //abstract public function signup($name, $age, $password, $email, $addressId);
-    abstract public function signup($name, $age, $password, $email);
+    abstract public function signup($name, $age, $password, $email,$phone);
 }
 ?>
