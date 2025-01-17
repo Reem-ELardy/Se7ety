@@ -12,7 +12,10 @@ class MedicalDonationCommand implements ICommand{
         $this->donation->CancelDonation();
     }
     public Function redo(){
-
+        $donation_id1 = uniqid('donation_', true);
+        $this->donation->setDonationStatus('Pending');
+        $this->donation->processDonationTemplate($donation_id1);
+        return [$donation_id1, $this->donation];
     }
 
 }
