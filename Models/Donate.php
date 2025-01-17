@@ -132,9 +132,9 @@ class Donate {
     
             $donates = [];
             while ($stmt->fetch()) {
-                $donate = new Donate($DonorID, 'user',(int) $Donate_ID, $Date, $Time, $IsDeleted);
+                $donate = new Donate($DonorID, (int) $Donate_ID, $Date, $Time, $IsDeleted);
                 $donate->setDonateID($Donate_ID);
-                $donations = (new MoneyDonation($Donate_ID))->readDonateDonation($Donate_ID, 'user');
+                $donations = (new MoneyDonation($Donate_ID))->readDonateDonation($Donate_ID);
                 $donate->Donation_Details = $donations;
                 $donates[] = $donate;
             }
