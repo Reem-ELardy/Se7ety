@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Certificates</title>
-    <link rel="stylesheet" href="style_Home.css">
+    <link rel="stylesheet" href="/Views/style_Home.css">
 </head>
 <body>
     <div class="container">
@@ -22,31 +22,34 @@
             </ul>
         </section>
 
-        <button onclick="location.href='Volunteer_Dashboard.php'" class="back-button">Back to Dashboard</button>
+        <button onclick="location.href='/../Controllers/VolunteerDashboaed.php'" class="back-button">Back to Dashboard</button>
     </div>
 
     <script>
         // Example data for testing (replace with dynamic data from the controller)
         const volunteerData = <?= json_encode($data['volunteerDetails'] ?? null); ?>;
 
+
         const totalHoursElement = document.getElementById("total-hours");
         const certificatesListElement = document.getElementById("certificates-list");
 
         if (volunteerData) {
             // Display total hours
-            totalHoursElement.textContent = `${volunteerData.totalHours || 0} hours`;
+            totalHoursElement.textContent = `${volunteerData['totalHours'] || 0} hours`;
 
             // Display certificates
-            const certificates = volunteerData.certificates || [];
-            if (certificates.length > 0) {
+            const certificates = volunteerData['certificates'] ;
+            console.log(certificates.length);
+            if (Array.isArray(certificates)) {
+                console.log("certificates");
                 certificates.forEach((certificate, index) => {
                     const listItem = document.createElement("li");
-                    listItem.innerHTML = `
+                    listItem.innerHTML =`
                         <h3>Certificate ${index + 1}</h3>
-                        <p><strong>Event:</strong> ${certificate.event}</p>
-                        <p><strong>Date:</strong> ${certificate.date}</p>
-                        <p><strong>Address:</strong> ${certificate.address}</p>
-                        <a href="${certificate.downloadLink}" target="_blank" download>Download Certificate</a>
+                        <p><strong>Event:</strong> ${certificate['event']}</p>
+                        <p><strong>Date:</strong> ${certificate['date']}</p>
+                        <p><strong>Address:</strong> ${certificate['address']}</p>
+                        <a href="${certificate.id}" target="_blank" download>Download Certificate</a>
                     `;
                     certificatesListElement.appendChild(listItem);
                 });

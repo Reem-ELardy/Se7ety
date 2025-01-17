@@ -63,11 +63,11 @@
 
 <!-- dah 3shan lma tygo t3mlo integrate -->
 
-        <button onclick="location.href='/../Controllers/ProfilePage.php'" class="profile-button">Go to Profile</button>
-        <button onclick="location.href='/../Controllers/GoingToHome.php'" class="back-button">logout</button>
+        <button onclick="location.href='/../Controllers/VoluntertProfile.php'" class="profile-button">Go to Profile</button>
+        <button onclick="location.href='/../Controllers/LogOutController.php'" class="back-button">logout</button>
     </div>
     <script>
-        k
+        
         function redirectToDetails(id) {
     // Redirect to another screen with the id as a query parameter
          window.location.href = `/../Controllers/EventDetailsController.php?id=${id}`;

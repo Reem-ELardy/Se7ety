@@ -79,7 +79,6 @@
         <div id="volunteer-skill-dropdown" class="hidden">
           <select name="volunteerSkill" class="input-field" id="volunteerSkill">
             <option value="">-- Select Skill --</option>
-            <!-- Skills will be dynamically populated via JavaScript -->
           </select>
         </div>
 
@@ -125,9 +124,9 @@
     skillDropdown.innerHTML = '<option value="">-- Select Skill --</option>';
     skillList.forEach(skill => {
       const option = document.createElement('option');
-      option.value = skill['id']; // Skill ID as the value
-      option.textContent = skill['name']; // Skill Name as the display text
-      option.id = `skill-${skill['id']}`; // Assigning unique ID to the option
+      option.value = skill['id']; 
+      option.textContent = skill['name'];
+      option.id = `skill-${skill['id']}`; 
       skillDropdown.appendChild(option);
     });
   }

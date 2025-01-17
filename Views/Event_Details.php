@@ -25,7 +25,7 @@
             <p><strong>Type:</strong> <span id="event-type">Loading...</span></p>
         </section>
 
-        <button onclick="location.href='/../Controllers/VolunteerDashboard.php'" class="back-button">Back to Dashboard</button>
+        <button onclick="location.href='/../Controllers/VolunteerDashboaed.php'" class="back-button">Back to Dashboard</button>
     </div>
 
     <script>
