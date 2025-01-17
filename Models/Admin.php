@@ -7,6 +7,7 @@ require_once __DIR__ . '/../DB-creation/DBProxy.php';
 enum Role: string {
     case DonationAdmin = 'DonationAdmin';
     case PaymentAdmin = 'PaymentAdmin';
+    case EventAdmin = 'EventAdmin';
 }
 
 class Admin extends Person {
@@ -21,9 +22,10 @@ class Admin extends Person {
         $email = "",
         $addressId = null,
         $isDeleted = false,
+        $phone = '',
         Role $role = Role::DonationAdmin // Default role
     ) {
-        parent::__construct($id, $name, $age, $password, $email, $addressId, $isDeleted);
+        parent::__construct($id, $name, $age, $password, $email, $addressId, $isDeleted, $phone);
         $this->role = $role;
         $this->dbProxy = new DBProxy($name); // Initialize DBProxy with a context
     }
@@ -81,7 +83,7 @@ class Admin extends Person {
      * @param string $email
      * @return bool True if signup is successful, false otherwise.
      */
-    public function signup($name, $age, $password, $email): bool {
+    public function signup($name, $age, $password, $email, $phone): bool {
         if (empty($name) || empty($age) || empty($password) || empty($email)) {
             return false;
         }
@@ -95,6 +97,7 @@ class Admin extends Person {
         $this->age = $age;
         $this->password = $password;
         $this->email = $email;
+        $this->phone = $phone;
 
         return $this->createAdmin();
     }
