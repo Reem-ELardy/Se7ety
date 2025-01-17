@@ -12,7 +12,7 @@
             <button onclick="location.href='LogoutController.php'" class="logout-button">Logout</button>
             <h1>Patient Dashboard</h1>
             <button onclick="location.href='ProfileController.php'" class="profile-button">Profile</button>
-            <button onclick="location.href='NotificationsController.php'" class="notification-button">Notifications</button>
+            <button onclick="showNotifications()" class="notification-button">Notifications</button>
         </header>
 
         <section class="dashboard">
@@ -65,6 +65,26 @@
     </div>
 
     <script>
+        // Show notifications in a popup
+        function showNotifications() {
+            // Simulate fetching notifications from the backend
+            fetch('/Controllers/GetNotificationsController.php')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        const messages = data.notifications;
+                        let messageList = messages.map(msg => `- ${msg}`).join('\n');
+                        alert(`Notifications:\n\n${messageList}`);
+                    } else {
+                        alert('No notifications available at the moment.');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error fetching notifications:', error);
+                    alert('An error occurred while fetching notifications.');
+                });
+        }
+
         // Toggle event registration dynamically
         function toggleEventRegistration(button) {
             const eventId = button.getAttribute('data-event-id');
