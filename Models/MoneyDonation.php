@@ -32,6 +32,10 @@ class MoneyDonation extends Donation {
         $this->state=$state;
     }
 
+    public function getData(){
+        return $this->getCashAmount();
+    }
+
     public function setPaymentMethod($paymentMethod = null){
         if(strtolower($paymentMethod) == 'cash'){
             $this->donationMethod = new CashDonationPayment();
@@ -72,7 +76,7 @@ class MoneyDonation extends Donation {
         }
         return false;
     }
-
+    
     //Payment using Payment Strategy
     public function payment(){
         return $this->donationMethod->processPayment($this->cash);
@@ -93,6 +97,25 @@ class MoneyDonation extends Donation {
     public function calculatePayment(){
         $totaldata = $this->donationMethod->calculations($this->cash);
         return $totaldata;
+    }
+
+    public function retrieveAllMoney(){
+        $query = "SELECT * FROM Donation WHERE Type = 'Money' AND IsDeleted = 0";
+        $stmt = $this->dbProxy->prepare($query, []);
+
+        if ($stmt) {
+            $stmt->store_result();
+            $stmt->bind_result($DonationID, $DonateID, $Type, $cashamount, $Status, $IsDeleted);
+    
+            $donations = [];
+            while ($stmt->fetch()) {
+                $donation = new MoneyDonation(DonateID: $DonateID, cashamount:$cashamount, status:$Status, DonationID: $DonationID);
+                $donations[] = $donation;
+            }
+            return $donations;
+        }
+
+        return [];
     }
 
 }
