@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Donation Admin</title>
+        <link rel="stylesheet" href="style_Home.css">
+    </head>
+    <body>
+        <div class="container">
+            <header>
+                <a href="Admin_Dashboard.php" class="back-button">Logout</a>
+                <h1>Donation Admin</h1>
+            </header>
+
+            <section class="donation-list">
+                <h2>Donations</h2>
+                <div id="donations-container">
+                    <!-- Dynamic list of donations will appear here -->
+                </div>
+            </section>
+        </div>
+
+        <script>
+            // Example donations data deh bs 3shan a test ana anty ghyryha 3ady 
+            const donations = [
+                { id: 1, type: "Money", amount: 100, status: "pending" },
+                { id: 2, type: "Medical", name: "Bandages", quantity: 50, status: "approved" },
+                { id: 3, type: "Money", amount: 200, status: "pending" }
+            ];
+
+            const donationsContainer = document.getElementById("donations-container");
+
+            // Render donations dynamically
+            donations.forEach(donation => {
+                const donationItem = document.createElement("div");
+                donationItem.classList.add("donation-item");
+
+                // Donation details
+                let donationDetails = "";
+                if (donation.type === "Money") {
+                    donationDetails = `<p>Type: Money Donation</p><p>Amount: $${donation.amount}</p>`;
+                } else if (donation.type === "Medical") {
+                    donationDetails = `<p>Type: Medical Donation</p><p>Name: ${donation.name}</p><p>Quantity: ${donation.quantity}</p>`;
+                }
+
+                donationItem.innerHTML = `
+                    <div class="donation-details">
+                        ${donationDetails}
+                        <p>Status: ${donation.status}</p>
+                    </div>
+                `;
+
+                // Add "Action" button dynamically if status is pending
+                if (donation.status === "pending") {
+                    const actionButton = document.createElement("button");
+                    actionButton.classList.add("action-button");
+                    actionButton.textContent = "Done";
+                    actionButton.addEventListener("click", () => {
+                        alert(`Taking action on donation ID: ${donation.id}`);
+                    });
+                    donationItem.appendChild(actionButton);
+                }
+
+                donationsContainer.appendChild(donationItem);
+            });
+        </script>
+    </body>
+</html>
