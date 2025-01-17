@@ -229,3 +229,21 @@ section.dashboard {
   .profile-button:hover {
     background-color: #0056b3;
   }
+
+  .notification-button {
+    position: absolute;
+    top: 60px; /* Adjust this to place it right below the profile button */
+    right: 10px;
+    background-color: #28a745; /* Green background */
+    color: white;
+    padding: 10px 15px;
+    border: none;
+    border-radius: 5px;
+    font-size: 16px;
+    cursor: pointer;
+    z-index: 100; /* Ensure it stays on top */
+}
+
+.notification-button:hover {
+    background-color: #218838; /* Darker green on hover */
+}

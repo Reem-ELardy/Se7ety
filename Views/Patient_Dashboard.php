@@ -12,6 +12,7 @@
             <button onclick="location.href='LogoutController.php'" class="logout-button">Logout</button>
             <h1>Patient Dashboard</h1>
             <button onclick="location.href='ProfileController.php'" class="profile-button">Profile</button>
+            <button onclick="location.href='NotificationsController.php'" class="notification-button">Notifications</button>
         </header>
 
         <section class="dashboard">
