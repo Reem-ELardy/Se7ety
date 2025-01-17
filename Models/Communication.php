@@ -106,7 +106,7 @@ class Communication {
                 return false; 
         }
         $query = "INSERT INTO Communication (PersonID, Type, Message) VALUES (?, ?, ?)";
-        $stmt = $this->dbProxy->prepare($query, [ $this->recipient->getId(), $this->messageType->value,, $this->message]);
+        $stmt = $this->dbProxy->prepare($query, [$this->recipient->getId(),$this->messageType->value, $this->message]);
     
         if (!$stmt) {
             return false;
@@ -121,7 +121,7 @@ class Communication {
             return false;
         }
         $query = "UPDATE Communication SET PersonID = ?, Type = ?, Message = ? WHERE ID = ?";
-        $stmt = $this->dbProxy->prepare($query,  $this->recipient->getId(), $this->messageType->value,  $this->message, $this->id   );
+        $stmt = $this->dbProxy->prepare($query,  [ $this->recipient->getId(), $this->messageType->value,$this->message,$this->id]);
         if (!$stmt) {
             return false;
         }
