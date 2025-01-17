@@ -15,12 +15,12 @@ class Communication {
     private $id;
     private Person $recipient;
     private String $message;
-    private Subject $event;
+    private $event;
     private ICommunicationStrategy $communicationMethod;
     private MessageType $messageType; 
     protected $dbProxy;
 
-    public function __construct(ICommunicationStrategy $communicationMethod, $message, Subject  $event , Person $recipient , MessageType $messageType) {
+    public function __construct(ICommunicationStrategy $communicationMethod, $message, $event , Person $recipient , MessageType $messageType) {
         $this->dbProxy = new DBProxy('user');
         $this->communicationMethod = $communicationMethod;
         $this->recipient = $recipient;
