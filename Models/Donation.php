@@ -77,6 +77,8 @@ abstract class Donation {
         $this->donationtype = DonationType::from($donationType);
     }
 
+    abstract public function getData();
+
     //Template Functions
     public function processDonationTemplate($donation_id) {
         // Start session if it's not already started
@@ -191,6 +193,7 @@ abstract class Donation {
         if($this->status->value === 'Pending'){
             $this->setDonationStatus("Canceled");
             $this->updateDonation();
+            $this->deleteDonation();
             return true;
         }
         return false;
