@@ -1,4 +1,6 @@
 <?php
+require_once __DIR__ . '/../DB-creation/IDatabase.php';
+require_once __DIR__ . '/../DB-creation/DBProxy.php';
 require_once "IMoneyDonationState.php";
 require_once 'MoneyDonation.php';
 require_once 'MoneyDoneState.php';
