@@ -12,7 +12,7 @@ class Certificate {
     private int $eventID;
     protected $dbProxy;
 
-    public function __construct(int $eventID, int $volunteerID) {
+    public function __construct(int $eventID = 0, int $volunteerID = 0) {
         $this->dbProxy = new DBProxy('user');
         $this->eventID = $eventID;
         $this->volunteerID = $volunteerID;
@@ -110,21 +110,21 @@ class Certificate {
         $query = "SELECT VolunteerID, EventID FROM Certificate WHERE ID = ? AND IsDeleted = 0";
         $stmt = $this->dbProxy->prepare($query, [$id]);
         if (!$stmt) {
-            return null;
+            return false;
         }
 
         $stmt->bind_result($this->volunteerID, $this->eventID);
 
         if ($stmt->fetch()) {
             if ($this->volunteerID && $this->eventID) {
-                $this->ID = $id;
-                $this->fetchEventDetails($this->eventID);
-                $this->fetchVolunteerName($this->volunteerID);         
-                return true;
+                $this->ID = $id;        
             }
         }
+        $stmt->close();
+        $this->fetchEventDetails($this->eventID);
+        $this->fetchVolunteerName($this->volunteerID);
+        return true; 
 
-        return false;
     }
 
     public function getCertificatesByVolunteerId(int $volunteerId): ?array {
@@ -196,17 +196,17 @@ class Certificate {
         }
     }
 
-    public function downloadCertificate(): bool {
-        $jsonAdapter = new CertificateToJSON($this);
-        return $jsonAdapter->exportToJson();
-    }
-
     public function generateCertificateContent(): string {
         return "Certificate of Participation\n" .
                "Volunteer Name: " . $this->getVolunteerName() . "\n" .
                "Event Name: " . $this->getEventName() . "\n" .
                "Event Date: " . $this->getEventDate()->format('Y-m-d') . "\n\n" .
                "Thank you for your contribution to making this event a success!";
+    }
+
+    public function downloadCertificate(): bool {
+        $jsonAdapter = new CertificateToJSON($this);
+        return $jsonAdapter->exportToJson();
     }
 
 }
