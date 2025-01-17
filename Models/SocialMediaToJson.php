@@ -1,6 +1,7 @@
 <?php
 
 require_once 'IJsonAdapter.php';
+require_once 'SocialMediaComm.php';
 
 class SocialMediaJsonAdapter implements IJsonAdapter {
     private SocialMedia $socialMedia;
