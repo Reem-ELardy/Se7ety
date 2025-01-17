@@ -122,17 +122,6 @@
         } else {
             donationInfo.textContent = "Donation not found.";
         }
-
-        
-        function undoDonation(type, donationID) {
-
-            alert("Donation is deleted");
-        }
-
-        function redoDonation(type, id) {
-            alert("dah for test bs ya reem");
-            
-        }
     </script>
 </body>
 </html>

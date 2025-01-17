@@ -9,7 +9,7 @@
 <body>
     <div class="container">
         <header>
-            <button onclick="location.href='LogoutController.php'" class="logout-button">Logout</button>
+            <button onclick="location.href='/Controllers/LogOutController.php'" class="logout-button">Logout</button>
             <h1>Welcome to Se7ety</h1>
         </header>
         <section class="donations">

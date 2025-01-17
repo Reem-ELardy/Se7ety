@@ -9,8 +9,8 @@
 <body>
     <div class="container">
         <header>
-            <button onclick="location.href='LogoutController.php'" class="logout-button">Logout</button>
-            <h1>Admin Dashboard</h1>
+        <button onclick="location.href='/Controllers/LogOutController.php'" class="logout-button">Logout</button>
+        <h1>Admin Dashboard</h1>
         </header>
 
         <section class="dashboard-container">

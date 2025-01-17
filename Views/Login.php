@@ -21,6 +21,8 @@
               <label><input type="radio" name="role" value="Volunteer" <?php if (isset($_POST['role']) && $_POST['role'] == 'Volunteer') echo 'checked'; ?> required> I am a Volunteer</label>
               <label><input type="radio" name="role" value="Donor" <?php if (isset($_POST['role']) && $_POST['role'] == 'Donor') echo 'checked'; ?>> I am a Donor</label>
               <label><input type="radio" name="role" value="Patient" <?php if (isset($_POST['role']) && $_POST['role'] == 'Patient') echo 'checked'; ?>> I am a Patient</label>
+              <label><input type="radio" name="role" value="Admin" <?php if (isset($_POST['role']) && $_POST['role'] == 'Admin') echo 'checked'; ?>> I am an Admin</label>
+
       </div>
 
 
