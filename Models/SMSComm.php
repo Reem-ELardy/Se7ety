@@ -2,7 +2,7 @@
 
 class SMS implements ICommunicationStrategy{
 
-    function send_communication(string $message, Person $person, Subject $event) {
+    function send_communication(string $message, Person $person, Subject $event): bool {
             $recipientPhone = $person->getPhone(); 
             if (!$recipientPhone) {
                 return false;
