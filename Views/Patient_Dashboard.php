@@ -4,12 +4,14 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Patient Dashboard</title>
-    <link rel="stylesheet" href="style_Patient.css">
+    <link rel="stylesheet" href="/Views/style_Patient.css">
 </head>
 <body>
     <div class="container">
         <header>
+            <button onclick="location.href='LogoutController.php'" class="logout-button">Logout</button>
             <h1>Patient Dashboard</h1>
+            <button onclick="location.href='ProfileController.php'" class="profile-button">Profile</button>
         </header>
 
         <section class="dashboard">
@@ -43,19 +45,19 @@
                 <h2>Your Needs</h2>
                 <ul id="patient-need-list">
                     <?php if (!empty($patientNeeds)): ?>
-                        <?php foreach ($patientNeeds as $need): ?>
+                        <?php foreach ($patientNeeds as $index => $need): ?>
                             <li>
-                                <h3>Need: <?= htmlspecialchars($need['type']) ?></h3>
+                                <h3>Need: <?= htmlspecialchars($need['name']) ?></h3>
                                 <p>Status: <?= htmlspecialchars($need['status']) ?></p>
-                                <button onclick="location.href='EditNeed.php?id=<?= htmlspecialchars($need['id']) ?>'">Edit</button>
-                            </li>
+                                <button onclick="location.href='DeletePatientNeed.php?id=<?= htmlspecialchars($index) ?>'">Delete</button>
+                                </li>
                         <?php endforeach; ?>
                     <?php else: ?>
                         <p>No needs created yet.</p>
                     <?php endif; ?>
                 </ul>
                 <div class="action-buttons">
-                    <button onclick="location.href='CreatePatientNeed.php'">Add New Need</button>
+                    <button onclick="location.href='/Views/Patient_Need.php'">Add New Need</button>
                 </div>
             </div>
         </section>
@@ -65,7 +67,7 @@
         // Toggle event registration dynamically
         function toggleEventRegistration(button) {
             const eventId = button.getAttribute('data-event-id');
-            const isRegistering = button.textContent === 'Register Event';
+            const isRegistering = button.textContent.trim() === 'Register Event';
 
             // Simulate a backend request using fetch (replace with actual API call)
             fetch(`/Controllers/EventRegistrationController.php`, {
@@ -75,7 +77,7 @@
                 },
                 body: JSON.stringify({
                     eventId: eventId,
-                    action: isRegistering ? 'register' : 'unregister'
+                    action: isRegistering ?  'register' : 'unregister'
                 })
             })
             .then(response => response.json())
@@ -83,6 +85,7 @@
                 if (data.success) {
                     // Toggle button text dynamically
                     button.textContent = isRegistering ? 'Unregister Event' : 'Register Event';
+                    location.reload();
                 } else {
                     alert('An error occurred: ' + data.message);
                 }
