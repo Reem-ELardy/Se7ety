@@ -114,34 +114,35 @@ class Certificate {
         }
 
         $stmt->bind_result($this->volunteerID, $this->eventID);
-        $stmt->fetch();
 
-        if ($this->volunteerID && $this->eventID) {
-            $this->ID = $id;
-            $this->fetchEventDetails($this->eventID);
-            $this->fetchVolunteerName($this->volunteerID);         
-            return true;
+        if ($stmt->fetch()) {
+            if ($this->volunteerID && $this->eventID) {
+                $this->ID = $id;
+                $this->fetchEventDetails($this->eventID);
+                $this->fetchVolunteerName($this->volunteerID);         
+                return true;
+            }
         }
 
         return false;
     }
 
     public function getCertificatesByVolunteerId(int $volunteerId): ?array {
-        $sql = "SELECT * FROM Certificate WHERE VolunteerID = ? AND IsDeleted = 0";
+        $sql = "SELECT ID, VolunteerID, EventID FROM Certificate WHERE VolunteerID = ? AND IsDeleted = 0";
         $stmt = $this->dbProxy->prepare($sql, [$volunteerId]);
 
-        if ($stmt) {
-            $result = $stmt->get_result();
-            $certificates = [];
-            while ($row = $result->fetch_assoc()) {
-                $certificates[] = $row;
-            }
+        $id = $volunteerID = $eventID = 0;
+        $certificates = [];
 
-            return $certificates;
-
+        $stmt->bind_result($id, $volunteerID, $eventID);
+    
+        while ($stmt->fetch()) {
+            $certificate = new Certificate($eventID, $volunteerID);
+            $certificate->setID($id);
+            $certificates[] = $certificate;
         }
 
-        return null;
+        return $certificates;
     }
 
     public function deleteCertificate(): bool {
