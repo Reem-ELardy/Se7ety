@@ -68,7 +68,7 @@ class Notification implements Observer {
         $stmt = $this->dbProxy->prepare($sql, [$updatedMessage, $this->id]);
     
         if ($stmt) {
-            return $stmt;
+            return true;
         }
     
         return false;
@@ -82,7 +82,7 @@ class Notification implements Observer {
         if ($stmt) {
 
             $this->id = $this->dbProxy->getInsertId();
-            return $stmt;
+            return true;
         }
 
         return false;
@@ -94,7 +94,7 @@ class Notification implements Observer {
         $stmt = $this->dbProxy->prepare($sql, [$this->id]);
     
         if ($stmt) {
-            return $stmt;
+            return true;
         }
     
         return false;

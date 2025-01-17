@@ -64,7 +64,7 @@ class EventReminder implements Observer {
 
         if ($stmt) {
             $this->id = $this->dbProxy->getInsertId();;
-            return $stmt;
+            return true;
         }
 
         return false;
@@ -83,7 +83,7 @@ class EventReminder implements Observer {
         $stmt = $this->dbProxy->prepare($sql, [$updatedMessage, $eventId]);
 
         if ($stmt) {
-            return $stmt;
+            return true;
         }
 
         return false;

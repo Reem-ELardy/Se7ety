@@ -35,8 +35,8 @@ class Event implements Subject {
     private array $observers;
 
     public function __construct(
-        int $id, string $name, int $locationID, DateTime $date_time, 
-        string $description, int $max_no_of_attendance, EventType $type
+        int $id = 0, string $name = '', int $locationID = 1, DateTime $date_time = new DateTime(), 
+        string $description = '', int $max_no_of_attendance = 0, EventType $type = EventType::Other
     ) {
         $this->dbProxy = new DBProxy('user');
         $this->id = $id;
@@ -143,7 +143,7 @@ class Event implements Subject {
             $EventReminder = new EventReminder($this);
             $EventReminder->createReminder();
             $this->registerObserver($EventReminder);
-            return $stmt;
+            return true;
         }
     
         return false;
@@ -170,7 +170,7 @@ class Event implements Subject {
     
         $this->setMeasurments($name, $locationID, $date_time, $description, $max_no_of_attendance, $type);
         
-        return $stmt;
+        return true;
     }
     
 
@@ -229,7 +229,7 @@ class Event implements Subject {
             $this->removeObserver($observer); 
         }
     
-        return $stmt;
+        return true;
     }
     
 
@@ -350,7 +350,7 @@ class Event implements Subject {
         if (!$stmt) {
             return false;
         }
-        return $stmt;
+        return true;
     }
 
 
@@ -360,7 +360,7 @@ class Event implements Subject {
         if (!$stmt) {
             return false;
         }
-        return $stmt;
+        return true;
     }
 
 
@@ -370,7 +370,7 @@ class Event implements Subject {
         if (!$stmt) {
             return false;
         }
-        return $stmt;
+        return true;
     }
 
     public function removePatient(): bool {
@@ -379,7 +379,7 @@ class Event implements Subject {
         if (!$stmt) {
             return false;
         }
-        return $stmt;
+        return true;
     }
 
     public function addPatientToEvent(int $patientId): void {

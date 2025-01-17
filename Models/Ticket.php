@@ -82,7 +82,7 @@ class Ticket {
 
         $this->id = $this->dbProxy->getInsertId();
 
-        return $stmt;
+        return true;
     }
 
     public function readTicket() {
@@ -123,7 +123,7 @@ class Ticket {
             return false;
         }
 
-        return $stmt->execute();
+        return true;
     }
 
     public function deleteTicket() {
@@ -134,7 +134,7 @@ class Ticket {
             return false;
         }
     
-        return $stmt->execute();
+        return true;
     }
 
     private function fetchEventDetails(int $eventID): void {

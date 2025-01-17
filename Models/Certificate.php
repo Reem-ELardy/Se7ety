@@ -152,7 +152,7 @@ class Certificate {
             return false;
         }
 
-        return $stmt;
+        return true;
     }
 
     private function fetchEventDetails(int $eventID): void {

@@ -108,7 +108,7 @@ class EventParticipation{
         $this->id = $this->dbProxy->getInsertId();
 
     
-        return $stmt;
+        return true;
     }
     
     
@@ -157,7 +157,7 @@ class EventParticipation{
             return false;
         }
 
-        return $stmt;
+        return true;
     }
 
     public function GenerateCertificate(){
