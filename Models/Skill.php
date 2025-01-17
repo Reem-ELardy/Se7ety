@@ -1,10 +1,14 @@
 <?php
+require_once __DIR__ . '/../DB-creation/IDatabase.php';
+require_once __DIR__ . '/../DB-creation/DBProxy.php';
 
 class Skills {
     private int $id;
     private string $name;
+    private $dbProxy;
 
-    public function __construct(int $id, string $name) {
+    public function __construct(int $id = 0, string $name = '') {
+        $this->dbProxy = new DBProxy('user');
         $this->id = $id;
         $this->name = $name;
     }
@@ -95,6 +99,29 @@ class Skills {
 
         return $stmt->execute();
     }
+
+    public function getAllSkills() {
+        $query = 'SELECT * FROM Skills WHERE IsDeleted = 0'; 
+        
+        $stmt = $this->dbProxy->prepare($query, []);
+        
+        $result = $stmt->get_result();
+    
+        if (!$result || $result->num_rows === 0) {
+            return false; 
+        }
+    
+        $skillsList = [];
+    
+        while ($row = $result->fetch_assoc()) {
+            $skillsList[] = [
+                'id' => $row['ID'],   // Skill ID
+                'name' => $row['Name'] // Skill Name
+            ];
+        }    
+        return $skillsList;
+    }
+    
 }
 
 ?>
