@@ -24,7 +24,6 @@ class Patient extends Person {
         $this->needs = $needs;
         $this->needslist = $needslist;
         $this->nationalId = $nationalId;
-
     }
 
 
@@ -122,24 +121,25 @@ class Patient extends Person {
         return false;
     }
 
-    public function signup($name, $age, $password, $email, $phone) {
+    public function signup($name, $age, $password, $email,$phone) {
+        // Input validation (you can expand this to include more robust checks)
         if (empty($name) || empty($age) || empty($password) || empty($email)) {
             return false;
         }
-        $IsPersonExist= $this-> findByEmail($email);
+
+        // Check if the email already exists
+        $IsPersonExist = $this->findByEmail($email);
         if ($IsPersonExist) {
             return false;
-        }
-        else {
-                 
+        } else {
             $this->name = $name;
             $this->age = $age;
             $this->password = $password;
             $this->email = $email;
-            $this->$phone = $phone;
+            $this->phone=$phone;
 
             $result = $this->createPatient();
-        
+
             if ($result) {
                 return true;
             } else {
@@ -149,7 +149,6 @@ class Patient extends Person {
     }
 
     public function readPatient($patientId) {
-
         $query = "SELECT Person.ID as PersonID, Person.Name, Person.Age, Person.Password, Person.Email, Person.AddressID, Patient.ID as PatientID
                   FROM Patient 
                   INNER JOIN Person ON Patient.PersonID = Person.ID 
@@ -285,6 +284,5 @@ class Patient extends Person {
     
         return $patients;
     }
-    
 }
 ?>
