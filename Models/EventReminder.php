@@ -54,7 +54,7 @@ class EventReminder implements Observer {
         $description = $this->event->getDescription(); 
 
         $this->reminderMessage = "Reminder: The event '$name' is scheduled at $location on " . 
-                                  $eventDate->format('Y-m-d') . ". Description: $description.";
+                                  $eventDate->format('Y-m-d H:i:s') . ". Description: $description.";
         
         // Calculate reminder date (1 day before event)
         $reminderDate = $eventDate->sub(new DateInterval('P1D'));

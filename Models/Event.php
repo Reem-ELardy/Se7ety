@@ -134,7 +134,7 @@ class Event implements Subject {
         $query = "INSERT INTO Event (Name, Date, Description, Type, TotalNoPatients, TotalNoVolunteers, MaxNoOfAttendance, LocationID) 
             VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
 
-        $date = $this->date_time->format('Y-m-d');
+        $date = $this->date_time->format('Y-m-d H:i:s');
         $typeString = $this->type->value;
         $stmt = $this->dbProxy->prepare($query,[$this->name, $date, $this->description, $typeString, $this->no_of_patients, $this->no_of_volunteers, $this->max_no_of_attendance, $this->locationID]);
         if ($stmt) {
@@ -161,7 +161,7 @@ class Event implements Subject {
                   SET Name = ?, Date = ?, Description = ?, MaxNoOfAttendance = ?, Type = ?, LocationID = ? 
                   WHERE ID = ? AND IsDeleted = 0";
 
-        $date = $date_time->format('Y-m-d');
+        $date = $date_time->format('Y-m-d H:i:s');
         $typeString = $type->value;
         $stmt = $this->dbProxy->prepare($query,[$name, $date, $description, $max_no_of_attendance, $typeString, $locationID, $this->id]);
         if (!$stmt) {
