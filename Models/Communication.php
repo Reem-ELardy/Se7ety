@@ -2,6 +2,8 @@
 
 require_once 'ICommunicationStrategy.php';
 require_once 'Event.php';
+require_once __DIR__ . '/../DB-creation/IDatabase.php';
+require_once __DIR__ . '/../DB-creation/DBProxy.php';
 
 enum MessageType: string {
     case Email = 'E-Mail';
@@ -16,8 +18,10 @@ class Communication {
     private Subject $event;
     private ICommunicationStrategy $communicationMethod;
     private MessageType $messageType; 
+    protected $dbProxy;
 
     public function __construct(ICommunicationStrategy $communicationMethod, $message, Subject  $event , Person $recipient , MessageType $messageType) {
+        $this->dbProxy = new DBProxy('user');
         $this->communicationMethod = $communicationMethod;
         $this->recipient = $recipient;
         $this->message = $message;
@@ -76,7 +80,6 @@ class Communication {
     }
 
     public function communicationDisplay(Event $event): void {
-        // Assuming $event has methods to get relevant details
         $details = "Event Name: " . $event->getName() .
                    ", Location ID: " . $event->getLocationID() .
                    ", Date & Time: " . $event->getDateTime()->format('Y-m-d H:i:s') .
@@ -97,71 +100,47 @@ class Communication {
             $this->communicationMethod->send_communication($message, $this -> recipient, $this->event);
     }
 
-    public function createCommunication() {
-        $conn = DBConnection::getInstance()->getConnection();
+    public function createCommunication(): bool {
     
         if ($this->recipient->getId() === null) {
-                return false; // Stop if Person IS NOT EXIST
+                return false; 
         }
         $query = "INSERT INTO Communication (PersonID, Type, Message) VALUES (?, ?, ?)";
-        $stmt = $conn->prepare($query);
+        $stmt = $this->dbProxy->prepare($query, [ $this->recipient->getId(), $this->messageType->value,, $this->message]);
     
-        if (!$stmt) {
-            throw new Exception("Prepare failed: " . $conn->error);
-        }
-    
-        $personId = $this->recipient->getId(); 
-        $type = $this->messageType->value; 
-        $message = $this->message;
-
-        $stmt->bind_param("iss", $personId, $type, $message);
-        $result = $stmt->execute();
-    
-        if ($result) {
-            $this->id = $conn->insert_id;
-        } else {
-            throw new Exception("Execute failed: " . $stmt->error);
-        }
-    
-        $stmt->close();
-        return $result;
-    }
-
-    public function updateCommunication() {
-        $conn = DBConnection::getInstance()->getConnection();
-        $query = "UPDATE Communication SET PersonID = ?, Type = ?, Message = ? WHERE ID = ?";
-        $stmt = $conn->prepare($query);
         if (!$stmt) {
             return false;
         }
-        $type = $this->messageType->value; // Convert enum to string
-        $stmt->bind_param("issii", $this->recipient->getId(), $type, $this->message, $this->id);
-        $result = $stmt->execute();
-    
-        if (!$result) {
+        $this->id = $this->dbProxy->getInsertId();
+        return true;
+
+    }
+
+    public function updateCommunication(): bool {
+        if ($this->id === null) {
+            return false;
+        }
+        $query = "UPDATE Communication SET PersonID = ?, Type = ?, Message = ? WHERE ID = ?";
+        $stmt = $this->dbProxy->prepare($query,  $this->recipient->getId(), $this->messageType->value,  $this->message, $this->id   );
+        if (!$stmt) {
             return false;
         }
     
         return true;
     }
 
-    public function readCommunication($communicationId) {
-        $conn = DBConnection::getInstance()->getConnection();
+    public function readCommunication(int $communicationId): bool {
         $query = "SELECT Communication.ID, Communication.PersonID, Communication.Type, Communication.Message, 
                          Person.Name
                   FROM Communication
                   INNER JOIN Person ON Communication.PersonID = Person.ID
                   WHERE Communication.ID = ?";
         
-        $stmt = $conn->prepare($query);
+        $stmt = $this->dbProxy->prepare($query,[$communicationId]);
         if (!$stmt) {
             return false;
         }
     
-        $stmt->bind_param("i", $communicationId);
-        $stmt->execute();
-    
-        // Declare variables for the results
         $id = null;
         $personId = null;
         $type = null;
@@ -173,12 +152,7 @@ class Communication {
         if ($stmt->fetch()) {
             $this->id = $id;
             $this->recipient = new Person($personName); 
-               // Validate and set $type
-            if ($type !== null) {
-                $this->messageType = MessageType::from($type); 
-            } else {
-                throw new Exception("Invalid message type: null");
-            }
+            $this->messageType = MessageType::from($type);
             $this->message = $message;
     
             return true;
@@ -187,23 +161,18 @@ class Communication {
         }
     }  
 
-    public function deleteCommunication($communicationId) {
-        $conn = DBConnection::getInstance()->getConnection();
-    
-        if ($communicationId === null) {
+    public function deleteCommunication(): bool {
+        if ($this->id === null) {
             return false;
         }
+    
         $query = "UPDATE Communication SET IsDeleted = true WHERE ID = ?";
-    $stmt = $conn->prepare($query);
+        $stmt = $this->dbProxy->prepare($query, [$this->id]);
 
     if (!$stmt) {
         return false;
     }
-
-    $stmt->bind_param("i", $communicationId);
-    $result = $stmt->execute();
-
-    return $result;
+    return true;
 }
    
 
