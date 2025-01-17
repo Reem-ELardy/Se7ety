@@ -48,6 +48,11 @@ class MedicalDonation extends Donation {
     public function getPaymentMethod(){
         return $this->donationMethod->getType();
     }
+
+    public function getData(){
+        return $this->getMedicalItems();
+    }
+
   
     public function addToMedicalItems( $MedicalName,  $MedicalType,  $quantity): void {
         if ($quantity < 0) {
@@ -150,6 +155,10 @@ class MedicalDonation extends Donation {
 
     public function ProcessDonation(): void{
         $this->state->ProsscingDonation($this);
+    }
+
+    public function setPayment($paymentMethod, $PaymentDetails){
+        $this->donationMethod = new InKindDonationPayment();
     }
 
     public function CompleteDonation(){
