@@ -10,7 +10,7 @@ class PatientEvent {
     protected $dbProxy;
 
 
-    public function __construct(int $eventID, int $patientID) {
+    public function __construct(int $eventID = 0, int $patientID = 0) {
         $this->dbProxy = new DBProxy('user');
         $this->eventID = $eventID;
         $this->patientID = $patientID;
@@ -43,13 +43,13 @@ class PatientEvent {
 
 
     public function read(int $eventId, int $patientId): bool {
-        $query = "SELECT EventID, PatientID, IsDeleted FROM PatientEvent WHERE EventID = ? AND PatientID = ?";
+        $query = "SELECT EventID, PatientID FROM PatientEvent WHERE EventID = ? AND PatientID = ? AND IsDeleted = 0";
         $stmt = $this->dbProxy->prepare($query, [$eventId, $patientId]);
         if (!$stmt) {
             return false;
         }
 
-        $stmt->bind_result($this->eventID, $this->patientID, $this->isDeleted);
+        $stmt->bind_result($this->eventID, $this->patientID);
         if ($stmt->fetch()) {
             return true;
         } else {

@@ -211,7 +211,6 @@ class Event implements Subject {
     }
     
     public function deleteEvent() {
-        
         $query = "UPDATE Event SET IsDeleted = 1 WHERE ID = ?";
         $stmt = $this->dbProxy->prepare($query, [$this->id]);
         
@@ -382,7 +381,7 @@ class Event implements Subject {
         return true;
     }
 
-    public function addPatientToEvent(int $patientId): void {
+    public function addPatientToEvent(int $patientId){
         $this->no_of_patients = $this->getNumberofPatients();
         if($this->no_of_patients < $this->max_no_of_attendance){
             $PatientEvent  = new PatientEvent($this->id, $patientId);
@@ -394,8 +393,10 @@ class Event implements Subject {
                 $this->registerObserver($PatientNotification);
                 $patientTicket = new Ticket($this->id, $patientId, $this->date_time);
                 $patientTicket->createTicket();
+                return true;
             }
         }
+        return false;
     }
 
     public function addVolunteerToEvent(int $volunteerID, string $role, int $participantHours): void {
@@ -409,7 +410,7 @@ class Event implements Subject {
         }
     }
 
-    public function deletePatientFromEvent(int $patientId): void {
+    public function deletePatientFromEvent(int $patientId){
         $PatientEvent  = new PatientEvent($this->id, $patientId);
         $read = $PatientEvent->read($this->id, $patientId);
         if($read){
@@ -421,8 +422,10 @@ class Event implements Subject {
                 $patientTicket = new Ticket($this->id, $patientId);
                 $patientTicket->readTicket();
                 $patientTicket->deleteTicket();
+                return true;
             }
         }
+        return false;
     }
 
     public function deleteVolunteerFromEvent(int $volunteerId): void {
