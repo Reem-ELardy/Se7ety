@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Edit Event</title>
-    <link rel="stylesheet" href="style_Home.css">
+    <link rel="stylesheet" href="/Views/style_Home.css">
 
 </head>
 <body>
@@ -28,15 +28,34 @@
                 <!-- Address -->
                 <div class="form-group">
                     <label for="event-address-city">Address:</label>
-                    <select name="city" id="event-address-city" required>
-                        <option value="City1" <?= isset($event['city']) && $event['city'] == 'City1' ? 'selected' : '' ?>>City1</option>
-                        <option value="City2" <?= isset($event['city']) && $event['city'] == 'City2' ? 'selected' : '' ?>>City2</option>
-                        <option value="City3" <?= isset($event['city']) && $event['city'] == 'City3' ? 'selected' : '' ?>>City3</option>
+                    <select name="city" id="event-address-city" onchange="populateChildren()" class="input-field" required>
+                        <option value="">-- Select a City --</option>
+                        <?php foreach ($event['addressList'] as $parent): ?>
+                            <option value="<?= $parent['ID']; ?>" <?= isset($event['CityID']) && $event['CityID'] == $parent['ID'] ? 'selected' : ''; ?>>
+                                <?= htmlspecialchars($parent['Name']); ?>
+                            </option>
+                        <?php endforeach; ?>
                     </select>
-                    <select name="region" id="event-address-region" required>
-                        <option value="Region1" <?= isset($event['region']) && $event['region'] == 'Region1' ? 'selected' : '' ?>>Region1</option>
-                        <option value="Region2" <?= isset($event['region']) && $event['region'] == 'Region2' ? 'selected' : '' ?>>Region2</option>
-                        <option value="Region3" <?= isset($event['region']) && $event['region'] == 'Region3' ? 'selected' : '' ?>>Region3</option>
+
+                    <!-- District Dropdown -->
+                    <select name="region" id="event-address-region" class="input-field" required>
+                        <option value="">-- Select a District --</option>
+                        <?php 
+                        // Populate the district dropdown based on the selected city
+                        if (isset($event['CityID'])) {
+                            foreach ($event['addressList'] as $parent) {
+                                if ($parent['ID'] == $event['CityID'] && isset($parent['children'])) {
+                                    foreach ($parent['children'] as $child) {
+                                        ?>
+                                        <option value="<?= $child['ID']; ?>" <?= isset($event['DistrictID']) && $event['DistrictID'] == $child['ID'] ? 'selected' : ''; ?>>
+                                            <?= htmlspecialchars($child['Name']); ?>
+                                        </option>
+                                        <?php
+                                    }
+                                }
+                            }
+                        }
+                        ?>
                     </select>
                 </div>
 
@@ -66,8 +85,8 @@
                 <div class="form-group">
                     <label for="event-type">Type:</label>
                     <select id="event-type" name="type" required>
-                        <option value="Donation Collect" <?= isset($event['type']) && $event['type'] == 'Donation Collect' ? 'selected' : '' ?>>Donation Collect</option>
-                        <option value="Medical Tour" <?= isset($event['type']) && $event['type'] == 'Medical Tour' ? 'selected' : '' ?>>Medical Tour</option>
+                        <option value="Donation-Collect" <?= isset($event['type']) && $event['type'] == 'Donation-Collect' ? 'selected' : '' ?>>Donation Collect</option>
+                        <option value="Medical-Tour" <?= isset($event['type']) && $event['type'] == 'Medical-Tour' ? 'selected' : '' ?>>Medical Tour</option>
                         <option value="Other" <?= isset($event['type']) && $event['type'] == 'Other' ? 'selected' : '' ?>>Other</option>
                     </select>
                 </div>
@@ -75,8 +94,48 @@
                 <!-- Submit Button -->
                 <button type="submit" class="submit-button">Update Event</button>
             </form>
-            <button onclick="location.href='/../Controllers/AdminDashboard.php'" class="back-button">Back to Dashboard</button>
+            <button onclick="location.href='/../Controllers/EventAdminHomeController.php'" class="back-button">Back to Dashboard</button>
         </section>
     </div>
 </body>
+<script>
+  // Address data passed from PHP
+  const addressList = <?= json_encode($data['addressList']); ?>;
+  const selectedDistrict = <?= json_encode($data['DistrictID'] ?? ''); ?>; // Ensure selectedDistrict is set
+
+  function populateChildren() {
+      const parentId = document.getElementById('parentDropdown').value;
+      const childDropdown = document.getElementById('DistrictAdress');
+
+      // Reset child dropdown
+      childDropdown.innerHTML = '<option value="">-- Select a District --</option>';
+
+      // Find the selected parent (city)
+      const selectedParent = addressList.find(parent => parent.ID == parentId);
+
+      // Populate child dropdown if children exist
+      if (selectedParent && selectedParent.children) {
+          selectedParent.children.forEach(child => {
+              const option = document.createElement('option');
+              option.value = child.ID;
+              option.textContent = child.Name;
+
+              // Pre-select the district if it matches
+              if (child.ID == selectedDistrict) {
+                  option.selected = true;
+              }
+
+              childDropdown.appendChild(option);
+          });
+      }
+  }
+
+  // Populate district dropdown on page load if a city is already selected
+  document.addEventListener('DOMContentLoaded', () => {
+      const selectedCity = document.getElementById('parentDropdown').value;
+      if (selectedCity) {
+          populateChildren();  // Populate the district options if city is selected
+      }
+  });
+</script>
 </html>

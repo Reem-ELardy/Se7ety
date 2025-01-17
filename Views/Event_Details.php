@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Event Details</title>
-    <link rel="stylesheet" href="style_Home.css">
+    <link rel="stylesheet" href="/Views/style_Home.css">
     <style>
         
     </style>
@@ -34,13 +34,13 @@
 
         // Populate event details
         if (eventDetails) {
-            document.getElementById("event-name").textContent = eventDetails.name || "N/A";
-            document.getElementById("event-address").textContent = eventDetails.address || "N/A";
-            document.getElementById("event-date").textContent = eventDetails.date || "N/A";
-            document.getElementById("event-time").textContent = eventDetails.time || "N/A";
-            document.getElementById("event-description").textContent = eventDetails.description || "N/A";
-            document.getElementById("event-max-attendees").textContent = eventDetails.maxAttendees || "N/A";
-            document.getElementById("event-type").textContent = eventDetails.type || "N/A";
+            document.getElementById("event-name").innerHTML = eventDetails['name'] || "N/A";
+            document.getElementById("event-address").innerHTML = eventDetails['address'] || "N/A";
+            document.getElementById("event-date").innerHTML = eventDetails['date'] || "N/A";
+            document.getElementById("event-time").innerHTML = eventDetails['time'] || "N/A";
+            document.getElementById("event-description").innerHTML = eventDetails['description'] || "N/A";
+            document.getElementById("event-max-attendees").innerHTML = eventDetails['maxAttendees'] || "N/A";
+            document.getElementById("event-type").innerHTML = eventDetails['type'] || "N/A";
         } else {
             document.querySelector(".event-details-container").innerHTML = "<p>Event details not available.</p>";
         }
