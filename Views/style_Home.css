@@ -648,3 +648,24 @@ hr {
 .add-event-button:hover {
   background-color: #388e3c;
 }
+
+
+/*logout button*/
+.logout-button {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  padding: 10px 20px;
+  background-color: blue; /* Red background */
+  color: white; /* White text */
+  border: none; /* No border */
+  border-radius: 5px; /* Rounded corners */
+  font-size: 14px; /* Font size */
+  cursor: pointer; /* Pointer cursor on hover */
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); /* Subtle shadow */
+  transition: background-color 0.3s ease; /* Smooth hover effect */
+}
+
+.logout-button:hover {
+  background-color: #e60000; /* Darker red on hover */
+}
