@@ -201,6 +201,14 @@ class Certificate {
         return $jsonAdapter->exportToJson();
     }
 
+    public function generateCertificateContent(): string {
+        return "Certificate of Participation\n" .
+               "Volunteer Name: " . $this->getVolunteerName() . "\n" .
+               "Event Name: " . $this->getEventName() . "\n" .
+               "Event Date: " . $this->getEventDate()->format('Y-m-d') . "\n\n" .
+               "Thank you for your contribution to making this event a success!";
+    }
+
 }
 
 ?>

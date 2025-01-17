@@ -4,7 +4,7 @@ require_once 'PatientNeedWaitingState.php';
 require_once 'PatientNeedAcceptedState.php';
 require_once '../DB-creation/DBProxy.php';
 
-enum Status: string {
+enum NeedStatus: string {
     case Waiting = 'Waiting';
     case Accepted = 'Accepted';
 }
@@ -12,11 +12,11 @@ enum Status: string {
 class PatientNeed {
     private int $MedicalID;
     private int $PatientID;
-    private Status $status;
+    private NeedStatus $status;
     private IPatientNeedState $state;
     private DBProxy $dbProxy;
 
-    public function __construct(int $MedicalID, int $PatientID, Status $status = Status::Waiting) {
+    public function __construct(int $MedicalID, int $PatientID, NeedStatus $status = NeedStatus::Waiting) {
         $this->MedicalID = $MedicalID;
         $this->PatientID = $PatientID;
         $this->status = $status;
@@ -33,7 +33,7 @@ class PatientNeed {
         return $this->PatientID;
     }
 
-    public function getStatus(): Status {
+    public function getStatus(): NeedStatus {
         return $this->status;
     }
 
@@ -44,7 +44,7 @@ class PatientNeed {
 
 
     // === Setters ===
-    public function setStatus(Status $status): void {
+    public function setStatus(NeedStatus $status): void {
         $this->status = $status;
         $this->initializeState();
     }
@@ -55,10 +55,10 @@ class PatientNeed {
 
     private function initializeState(): void {
         switch ($this->status) {
-            case Status::Waiting:
+            case NeedStatus::Waiting:
                 $this->state = new PatientNeedWaitingState();
                 break;
-            case Status::Accepted:
+            case NeedStatus::Accepted:
                 $this->state = new PatientNeedAcceptedState();
                 break;
         }
@@ -88,7 +88,7 @@ class PatientNeed {
             return false;
         }
 
-        return $stmt->execute();
+        return true;
     }
 
     public function updatePatientNeed(): bool {
@@ -103,7 +103,7 @@ class PatientNeed {
             return false;
         }
 
-        return $stmt->execute(); 
+        return $stmt; 
     }
 
     public function deletePatientNeed(): bool {
@@ -117,7 +117,7 @@ class PatientNeed {
             return false;
         }
 
-        return $stmt->execute();
+        return true;
     }
 
     public function readPatientNeed(int $MedicalID, int $PatientID): ?self {
@@ -128,12 +128,11 @@ class PatientNeed {
             return null;
         }
 
-        $stmt->execute();
         $result = $stmt->get_result();
 
         if ($row = $result->fetch_assoc()) {
             try {
-                $statusEnum = Status::from($row['Status']);
+                $statusEnum = NeedStatus::from($row['Status']);
                
             } catch (ValueError) {
                 return null;

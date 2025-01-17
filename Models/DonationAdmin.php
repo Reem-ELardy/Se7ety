@@ -83,7 +83,7 @@ class DonationAdmin extends Admin {
         $patientNeeds = [];
         while ($row = $result->fetch_assoc()) {
             try {
-                $statusEnum = Status::from($row['Status']); // Convert status to enum
+                $statusEnum = NeedStatus::from($row['Status']); // Convert status to enum
             } catch (ValueError) {
                 continue; // Skip invalid statuses
             }
