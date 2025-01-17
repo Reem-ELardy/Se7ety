@@ -186,7 +186,7 @@ class Donor extends Person {
     }
 
     public function getUserDonates(){
-        $Donate = new Donate(DonorID: $this->id);
+        $Donate = new Donate(DonorID: (int) $this->id);
         $this->DonateList = $Donate->readUserDonates($this->id);
         return $this->DonateList;
     }
