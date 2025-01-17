@@ -190,3 +190,42 @@ section.dashboard {
 .back-button:hover {
     background-color: #5a6268;
 }
+
+/*logout button*/
+.logout-button {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    padding: 10px 20px;
+    background-color: blue; /* Red background */
+    color: white; /* White text */
+    border: none; /* No border */
+    border-radius: 5px; /* Rounded corners */
+    font-size: 14px; /* Font size */
+    cursor: pointer; /* Pointer cursor on hover */
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); /* Subtle shadow */
+    transition: background-color 0.3s ease; /* Smooth hover effect */
+  }
+  
+  .logout-button:hover {
+    background-color: #e60000; /* Darker red on hover */
+  }
+
+  /* Style for the Profile button */
+.profile-button {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background-color: #007bff;
+    color: white;
+    padding: 10px 15px;
+    border: none;
+    border-radius: 5px;
+    font-size: 16px;
+    cursor: pointer;
+    z-index: 100; /* Ensure it stays on top */
+  }
+  
+  .profile-button:hover {
+    background-color: #0056b3;
+  }
