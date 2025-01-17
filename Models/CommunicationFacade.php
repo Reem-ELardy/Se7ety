@@ -31,7 +31,11 @@ class CommunicationFacade {
         $this->receipt = $receipt;
         $this->certificate = $certificate;
         $this->ticket = $ticket;
-        $this->jsonAdapter = $jsonAdapter ?? new SocialMediaJsonAdapter($socialMedia);
+        if ($socialMedia !== null && $jsonAdapter === null) {
+            $this->jsonAdapter = new SocialMediaJsonAdapter($socialMedia);
+        } else {
+            $this->jsonAdapter = $jsonAdapter;
+        }
     }
     private function sendCommunication(string $message, string $type): bool {
         $emailResult = true;
@@ -108,14 +112,14 @@ class CommunicationFacade {
 
     //     return true;
     // }
-    // public function sendSignupThankYou(string $type = "both"): bool {
-    //     if ($this->person) {
-    //         $message = "Thank you for joining our website!";
-    //         return $this->sendcommunication($message, $type);
-    //     }
-    //     echo "Error: Person is not set.";
-    //     return false;
-    // }
+    public function sendSignupThankYou(string $type = "both"): bool {
+        if ($this->person) {
+            $message = "Thank you for joining our website!";
+            return $this->sendcommunication($message, $type);
+        }
+        echo "Error: Person is not set.";
+        return false;
+    }
     private function simulateSMS(string $message, string $phone): bool {
         $phoneSanitized = preg_replace('/\D/', '', $phone); 
         $logFile = __DIR__ . "/sms_logs/{$phoneSanitized}_sms_log.txt";
@@ -173,7 +177,8 @@ class CommunicationFacade {
     
     public function sendEventParticipationThankYou(string $type = "both"): bool {
         if ($this->person && $this->event) {
-            $message = "Thank you for participating in the event!";
+            $eventName = $this->event->getName(); // Retrieve the event name
+            $message = "Thank you for participating in the event: $eventName!";
             return $this->sendCommunication($message, $type);
         }
         return false;
@@ -233,19 +238,14 @@ class CommunicationFacade {
 
         return false;
     }
-    public function sendEventArticle(string $type): bool {
-        if (!$this->event) {
-
-            return false;
-        }
-    
+    public function sendEventArticle(): bool {
         $article = $this->generateEventArticleList();
         $recipients = $this->getRecipients(); 
         $success = true;
     
         foreach ($recipients as $recipient) {
             $this->person = $recipient;
-            $result = $this->sendCommunication($article, $type);
+            $result = $this->sendCommunication($article, "social_media");
             $success = $success && $result; 
         }
     
