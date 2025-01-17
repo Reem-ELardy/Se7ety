@@ -2,13 +2,11 @@
 
 require_once 'PatientNeedWaitingState.php';
 require_once 'PatientNeedAcceptedState.php';
-require_once 'PatientNeedDoneState.php';
 require_once '../DB-creation/DBProxy.php';
 
 enum Status: string {
     case Waiting = 'Waiting';
     case Accepted = 'Accepted';
-    case Done = 'Done';
 }
 
 class PatientNeed {
@@ -16,14 +14,12 @@ class PatientNeed {
     private int $PatientID;
     private Status $status;
     private IPatientNeedState $state;
-    private ?DateTime $acceptedDate; 
     private DBProxy $dbProxy;
 
-    public function __construct(int $MedicalID, int $PatientID, Status $status = Status::Waiting, ?DateTime $acceptedDate = null) {
+    public function __construct(int $MedicalID, int $PatientID, Status $status = Status::Waiting) {
         $this->MedicalID = $MedicalID;
         $this->PatientID = $PatientID;
         $this->status = $status;
-        $this->acceptedDate = $acceptedDate;
         $this->dbProxy = new DBProxy('PatientNeed');
         $this->initializeState();
     }
@@ -45,17 +41,12 @@ class PatientNeed {
         return $this->state;
     }
 
-    public function getAcceptedDate(): ?DateTime {
-        return $this->acceptedDate;
-    }
+
 
     // === Setters ===
     public function setStatus(Status $status): void {
-        if ($status === Status::Accepted) {
-            $this->acceptedDate = new DateTime(); // Set acceptedDate when transitioning to Accepted
-        }
         $this->status = $status;
-        $this->initializeState(); // Update the state object to match the new status
+        $this->initializeState();
     }
 
     public function setState(IPatientNeedState $state): void {
@@ -70,33 +61,19 @@ class PatientNeed {
             case Status::Accepted:
                 $this->state = new PatientNeedAcceptedState();
                 break;
-            case Status::Done:
-                $this->state = new PatientNeedDoneState();
-                break;
         }
     }
 
     // === State Transition Logic ===
     public function processPatientNeed(DonationAdmin $admin): void {
-        $this->state->handleRequest($this, $admin); // Pass the admin to the state
+        $this->state->handleRequest($this, $admin);
     }
 
     public function completePatientNeed(DonationAdmin $admin): void {
         $this->state->NextState($this);
-        $this->processPatientNeed($admin); // Pass the required DonationAdmin instance
+        $this->processPatientNeed($admin);
     }
 
-    public function checkAndTransitionState(): void {
-        if ($this->status === Status::Accepted && $this->acceptedDate) {
-            $currentDate = new DateTime();
-            $interval = $currentDate->diff($this->acceptedDate);
-
-            if ($interval->days >= 3) {
-                $this->setStatus(Status::Done); // Transition to Done
-                $this->updatePatientNeed(); // Persist the change
-            }
-        }
-    }
 
     // === Database Methods ===
     public function createPatientNeed(): bool {
@@ -108,10 +85,10 @@ class PatientNeed {
         ]);
 
         if (!$stmt) {
-            return false; // Query preparation failed
+            return false;
         }
 
-        return $stmt->execute(); // Execute the query
+        return $stmt->execute();
     }
 
     public function updatePatientNeed(): bool {
@@ -123,10 +100,10 @@ class PatientNeed {
         ]);
 
         if (!$stmt) {
-            return false; // Query preparation failed
+            return false;
         }
 
-        return $stmt->execute(); // Execute the query
+        return $stmt->execute(); 
     }
 
     public function deletePatientNeed(): bool {
@@ -137,10 +114,10 @@ class PatientNeed {
         ]);
 
         if (!$stmt) {
-            return false; // Query preparation failed
+            return false;
         }
 
-        return $stmt->execute(); // Execute the query
+        return $stmt->execute();
     }
 
     public function readPatientNeed(int $MedicalID, int $PatientID): ?self {
@@ -148,7 +125,7 @@ class PatientNeed {
         $stmt = $this->dbProxy->prepare($query, [$MedicalID, $PatientID]);
 
         if (!$stmt) {
-            return null; // Query preparation failed
+            return null;
         }
 
         $stmt->execute();
@@ -157,15 +134,15 @@ class PatientNeed {
         if ($row = $result->fetch_assoc()) {
             try {
                 $statusEnum = Status::from($row['Status']);
-                $acceptedDate = $row['AcceptedDate'] ? new DateTime($row['AcceptedDate']) : null;
+               
             } catch (ValueError) {
-                return null; // Invalid status value
+                return null;
             }
 
-            return new self((int)$row['MedicalID'], (int)$row['PatientID'], $statusEnum, $acceptedDate);
+            return new self((int)$row['MedicalID'], (int)$row['PatientID'], $statusEnum);
         }
 
-        return null; // No record found
+        return null;
     }
 }
 ?>

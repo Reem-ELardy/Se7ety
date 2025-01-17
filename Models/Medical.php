@@ -127,8 +127,6 @@ class Medical {
         return true;
 
     }
-
-
     public function deleteMedical(): bool {
         if (!$this->id) {
             throw new Exception("Cannot delete a record without an ID.");
@@ -141,7 +139,6 @@ class Medical {
             return false;
         }
         return true;
-  
     }
     public  function FindByName( $Medicalname): bool {
         $query = "SELECT ID, Name, Type, Quantity FROM Medical WHERE Name = ? AND IsDeleted = 0";
@@ -162,5 +159,25 @@ class Medical {
 
     return false;
     }
+    public function getMedicalIdByName(string $medicalName): ?int {
+        // SQL query to fetch the ID for the given medical name
+        $query = "SELECT ID FROM Medical WHERE Name = ? AND IsDeleted = 0";
+        $stmt = $this->dbProxy->prepare($query, [$medicalName]); // Prepare the query
+    
+    
+        $stmt->bind_param("s", $medicalName);
+    
+        $stmt->execute();
+        $stmt->bind_result($medicalId);
+    
+        if ($stmt->fetch()) {
+            $stmt->close();
+            return $medicalId;
+        }
+    
+        $stmt->close();
+        return null;
+    }
+    
 }
 ?>
