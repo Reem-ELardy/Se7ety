@@ -16,7 +16,7 @@ class Patient extends Person {
     public function __construct($id = null, $personId = null, $name = "", $needs = "", $nationalId = null,
                                  $age = 0,  $medicalHistory = "", $needslist = [],
                                  $password = "", $email = "", $addressId = null, $IsDeleted = false,$phone = "" ) {
-        // Initialize the parent class (Person)
+      
         parent::__construct($id, $name, $age, $password, $email, $addressId, $IsDeleted, $phone);
         $this->dbProxy = new DBProxy($name); 
         $this->personId = $personId;
@@ -27,7 +27,7 @@ class Patient extends Person {
 
     }
 
-    // Getters and Setters for Volunteer attributes
+
     public function getId() {
         return $this->id;
     }
@@ -35,7 +35,7 @@ class Patient extends Person {
     public function setId($id) {
         $this->id = $id;
     }
-     // Getter and Setter for medicalHistory
+    
      public function getMedicalHistory() {
         return $this->medicalHistory;
     }
@@ -44,7 +44,7 @@ class Patient extends Person {
         $this->medicalHistory = $medicalHistory;
     }
 
-    // Getter and Setter for needs
+
     public function getNeeds() {
         return $this->needs;
     }
@@ -53,14 +53,6 @@ class Patient extends Person {
         $this->needs = $needs;
     }
 
-    // Getter and Setter for nationalId
-    public function getNationalId() {
-        return $this->nationalId;
-    }
-
-    public function setNationalId($nationalId) {
-        $this->nationalId = $nationalId;
-    }
 
     // Getter and Setter for needslist
     public function getNeedslist() {
@@ -72,7 +64,7 @@ class Patient extends Person {
     }
 
     public function createPatient() {        
-        // First, create the associated Person record
+
         if ($this->id === null) {
             $personId = $this->createPerson();
             if (!$personId) {
@@ -81,6 +73,7 @@ class Patient extends Person {
             $this->personId = $personId; 
         }
 
+        // Create Volunteer record
         $query = "INSERT INTO Patient (PersonID) VALUES (?)";
 
         $stmt = $this->dbProxy->prepare($query, [$this->id]);
@@ -94,12 +87,13 @@ class Patient extends Person {
     }
 
     public function updatePatient() {
-        $personUpdated = $this->updatePerson([$this->name, $this->age, $this->password, $this->email, $this->addressId,$this->phone, $this->personId]);
+        $personUpdated = $this->updatePerson([$this->name, $this->age, $this->password, $this->email, $this->addressId, $this->personId]);
 
         if (!$personUpdated) {
-            return false;  
+            return false;
         }
 
+        // Update Volunteer record
         $query = "UPDATE Patient SET PersonID = ? WHERE ID = ?";
         $stmt = $this->dbProxy->prepare($query, [ $this->personId, $this->id]);
 
@@ -112,7 +106,7 @@ class Patient extends Person {
 
     public function login($email, $enteredPassword) {
         $email = trim($email);
-        $query = "SELECT Person.ID as PersonID, Person.Name, Person.Age, Person.Password, Person.Email, Person.AddressID, Person.Phone, Patient.ID as PatientID
+        $query = "SELECT Person.ID as PersonID, Person.Name, Person.Age, Person.Password, Person.Email, Person.AddressID, Patient.ID as PatientID
                   FROM Patient 
                   INNER JOIN Person ON Patient.PersonID = Person.ID 
                   WHERE Person.Email = ?
@@ -121,15 +115,14 @@ class Patient extends Person {
 
         $stmt = $this->dbProxy->prepare($query, [$email]);
 
-        $stmt->bind_result($this->personId, $this->name, $this->age, $this->password, $this->email, $this->addressId,$this->phone, $this->id);
+        $stmt->bind_result($this->personId, $this->name, $this->age, $this->password, $this->email, $this->addressId, $this->id);
         if ($stmt->fetch() && $enteredPassword === $this->password && !$this->IsDeleted) {
             return true;
         }
         return false;
     }
 
-    public function signup($name, $age, $password, $email,$phone) {
-        // Input validation (you can expand this to include more robust checks)
+    public function signup($name, $age, $password, $email) {
         if (empty($name) || empty($age) || empty($password) || empty($email)) {
             return false;
         }
@@ -138,14 +131,12 @@ class Patient extends Person {
             return false;
         }
         else {
-                    // Set class properties
+                 
             $this->name = $name;
             $this->age = $age;
             $this->password = $password;
             $this->email = $email;
-            $this->phone=$phone;
-        
-            // Use the createPerson method to add the new user to the database
+
             $result = $this->createPatient();
         
             if ($result) {
@@ -158,15 +149,14 @@ class Patient extends Person {
 
     public function readPatient($patientId) {
 
-        // Load the volunteer's details based on their ID
-        $query = "SELECT Person.ID as PersonID, Person.Name, Person.Age, Person.Password, Person.Email, Person.AddressID, Person.Phone,Patient.ID as PatientID
+        $query = "SELECT Person.ID as PersonID, Person.Name, Person.Age, Person.Password, Person.Email, Person.AddressID, Patient.ID as PatientID
                   FROM Patient 
                   INNER JOIN Person ON Patient.PersonID = Person.ID 
                   WHERE Patient.ID = ?";
         
         $stmt = $this->dbProxy->prepare($query, [$patientId]);
 
-        $stmt->bind_result($this->personId, $this->name, $this->age, $this->password, $this->email, $this->addressId,$this->phone, $this->id);
+        $stmt->bind_result($this->personId, $this->name, $this->age, $this->password, $this->email, $this->addressId, $this->id);
 
         if ($stmt->fetch()) {
             return true;
@@ -180,7 +170,6 @@ class Patient extends Person {
             return false;
         }
     
-        // Delete (mark as deleted) the donor record
         $query = "UPDATE Person SET IsDeleted = true WHERE ID = ?";
         $stmt = $this->dbProxy->prepare($query, [$this->personId]);
         if (!$stmt) {
@@ -220,22 +209,21 @@ class Patient extends Person {
             return false;
         }
     }
-    /**
-     * Create a new PatientNeed request.
-     *
-     * @param int $medicalId The ID of the requested medical item.
-     * @return bool True if the request is created successfully, false otherwise.
-     */
-    public function createRequest(int $medicalId): bool {
-        $patientNeed = new PatientNeed($medicalId, $this->id); 
-        $patientNeed->setStatus(Status::Waiting); 
 
-        if ($patientNeed->createPatientNeed()) { 
-            return true;
-        } else {
+    public function createRequest(string $medicalName): bool {
+        $medical = new Medical();
+        $medicalId = $medical->getMedicalIdByName($medicalName);
+    
+        if ($medicalId === null) {
             return false;
         }
+        $patientNeed = new PatientNeed($medicalId, $this->id);
+        $patientNeed->setStatus(Status::Waiting);
+    
+        return $patientNeed->createPatientNeed(); 
     }
+    
+    
 
     /**
      * Retrieve all PatientNeeds associated with this patient.
@@ -245,15 +233,11 @@ class Patient extends Person {
     public function retrieveNeeds(): ?array {
         $conn = DBConnection::getInstance()->getConnection();
 
-        // Query to get all PatientNeeds for this patient
+
         $query = "SELECT  Medical_ID, Status 
                   FROM PatientNeed 
                   WHERE PatientID = ? AND IsDeleted = 0";
         $stmt = $conn->prepare($query);
-
-        if (!$stmt) {
-            return null;
-        }
 
         $stmt->bind_param("i", $this->id);
         $stmt->execute();
@@ -268,39 +252,9 @@ class Patient extends Person {
         }
 
         $stmt->close();
-        $this->setNeedslist($needs); 
+        $this->setNeedslist($needs);
 
         return $needs;
     }
-
-    public function getAllPatients(): array {
-        $conn = DBConnection::getInstance()->getConnection();
-        $query = "SELECT Person.ID as PersonID, Person.Name, Person.Email, Person.Phone, Patient.ID as PatientID
-                  FROM Patient
-                  INNER JOIN Person ON Patient.PersonID = Person.ID
-                  WHERE Person.IsDeleted = 0";
-    
-        $patients = [];
-        $stmt = $conn->prepare($query);
-    
-        if ($stmt) {
-            $stmt->execute();
-            $result = $stmt->get_result();
-            while ($row = $result->fetch_assoc()) {
-                $patient = new Patient(
-                    id: $row['PatientID'],
-                    personId: $row['PersonID'],
-                    name: $row['Name'],
-                    email: $row['Email'],
-                    phone: $row['Phone']
-                );
-                $patients[] = $patient;
-            }
-            $stmt->close();
-        }
-    
-        return $patients;
-    }
-    
 }
 ?>
