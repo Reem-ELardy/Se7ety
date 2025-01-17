@@ -122,7 +122,7 @@ class Patient extends Person {
         return false;
     }
 
-    public function signup($name, $age, $password, $email) {
+    public function signup($name, $age, $password, $email, $phone) {
         if (empty($name) || empty($age) || empty($password) || empty($email)) {
             return false;
         }
@@ -136,6 +136,7 @@ class Patient extends Person {
             $this->age = $age;
             $this->password = $password;
             $this->email = $email;
+            $this->$phone = $phone;
 
             $result = $this->createPatient();
         
@@ -218,7 +219,7 @@ class Patient extends Person {
             return false;
         }
         $patientNeed = new PatientNeed($medicalId, $this->id);
-        $patientNeed->setStatus(Status::Waiting);
+        $patientNeed->setStatus(NeedStatus::Waiting);
     
         return $patientNeed->createPatientNeed(); 
     }
@@ -233,8 +234,7 @@ class Patient extends Person {
     public function retrieveNeeds(): ?array {
         $conn = DBConnection::getInstance()->getConnection();
 
-
-        $query = "SELECT  Medical_ID, Status 
+        $query = "SELECT MedicalID, Status 
                   FROM PatientNeed 
                   WHERE PatientID = ? AND IsDeleted = 0";
         $stmt = $conn->prepare($query);
@@ -246,8 +246,8 @@ class Patient extends Person {
 
         $needs = [];
         while ($row = $result->fetch_assoc()) {
-            $patientNeed = new PatientNeed($row['Medical_ID'], $this->id);
-            $patientNeed->setStatus(Status::from($row['Status']));
+            $patientNeed = new PatientNeed($row['MedicalID'], $this->id);
+            $patientNeed->setStatus(NeedStatus::from($row['Status']));
             $needs[] = $patientNeed;
         }
 
@@ -256,5 +256,35 @@ class Patient extends Person {
 
         return $needs;
     }
+
+    public function getAllPatients(): array {
+        $conn = DBConnection::getInstance()->getConnection();
+        $query = "SELECT Person.ID as PersonID, Person.Name, Person.Email, Person.Phone, Patient.ID as PatientID
+                  FROM Patient
+                  INNER JOIN Person ON Patient.PersonID = Person.ID
+                  WHERE Person.IsDeleted = 0";
+    
+        $patients = [];
+        $stmt = $conn->prepare($query);
+    
+        if ($stmt) {
+            $stmt->execute();
+            $result = $stmt->get_result();
+            while ($row = $result->fetch_assoc()) {
+                $patient = new Patient(
+                    id: $row['PatientID'],
+                    personId: $row['PersonID'],
+                    name: $row['Name'],
+                    email: $row['Email'],
+                    phone: $row['Phone']
+                );
+                $patients[] = $patient;
+            }
+            $stmt->close();
+        }
+    
+        return $patients;
+    }
+    
 }
 ?>
